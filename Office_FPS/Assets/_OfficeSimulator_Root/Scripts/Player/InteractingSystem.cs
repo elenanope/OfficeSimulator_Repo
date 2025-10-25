@@ -11,17 +11,16 @@ public class InteractingSystem : MonoBehaviour
     RaycastHit hit; //Almacén de la información de los objetos con los que impactan los disparos
     
 
-    [Header("Weapon Parameters")]
+    [Header("Interacting Parameters")]
+    [SerializeField] GameObject heldObject = null;
+    [SerializeField] Transform holdingPoint;
     [SerializeField] float range = 4f;
     [SerializeField] float interactingCooldown = 0.1f; //Tiempo entre disparos
     [SerializeField] float reloadTime = 1.5f; //Tiempo entre disparos
-    [SerializeField] bool allowButtonHold = false; //Si se dispara click a click o por mantener
 
 
     [Header("Feedback References")]
     [SerializeField] GameObject impactEffect; //Referencia al VFX de impacto de bala
-    [SerializeField] GameObject heldObject = null;
-    [SerializeField] Transform holdingPoint;
 
     //Bools de estado
     [SerializeField] bool interacting; //Indica que estamos disparando
@@ -51,19 +50,7 @@ public class InteractingSystem : MonoBehaviour
                 StartCoroutine(InteractRoutine());
                 Debug.Log("Interacting try");
             }
-            /*
-            if (leaving)
-            {
-                if (heldObject != null) LeaveItem();
-                else
-                {
-                    leaving = false;
-                    Debug.Log("You don't have anything to leave");
-                }
-                    
-            }*/
         }
-        
     }
 
     IEnumerator InteractRoutine()
@@ -76,6 +63,7 @@ public class InteractingSystem : MonoBehaviour
 
     void Interact()
     {
+        //poner que cuando dejes un objeto (enciendas un hijo y apagues el heldobject) este vuelva a aparecer en su sitio original si no está a tu vista (si no queda mal)
         Vector3 direction = fpsCam.transform.forward;
         if (heldObject == null)
         {
@@ -93,20 +81,19 @@ public class InteractingSystem : MonoBehaviour
                 }
                 heldObject.transform.position = holdingPoint.position;
             }
-            
         }
         else
         { 
             if (Physics.Raycast(fpsCam.transform.position, direction, out hit, range, impactLayer))
             {
                 //CartuchosImpresora
-                if (heldObject.TryGetComponent(out TipoCartucho cartucho0))
+                if (heldObject.TryGetComponent(out TipoObjeto equipado))
                 {
-                    if(hit.transform.TryGetComponent(out TipoCartucho cartucho))
+                    if(hit.transform.TryGetComponent(out TipoObjeto señalado))
                     {
-                        if (cartucho0.mainPart)
+                        if (equipado.mainPart)
                         {
-                            if (cartucho0.cartridgeColour == cartucho.cartridgeColour)
+                            if (equipado.objectType == señalado.objectType)
                             {
                                 if (!heldObject.transform.GetChild(0).gameObject.activeSelf)
                                 {
@@ -116,27 +103,25 @@ public class InteractingSystem : MonoBehaviour
                                 else Debug.Log("Ya está lleno!");
                             }
                         }
-                        else if(cartucho.mainPart)
+                        else if(señalado.mainPart)
                         {
-                            if(cartucho.transform.position != cartucho.initialPoint.position)
+                            if(señalado.transform.position != señalado.initialPoint.position)
                             {
-                                if (!cartucho.transform.GetChild(0).gameObject.activeSelf) //color del cartucho, no la caja
+                                if (!señalado.transform.GetChild(0).gameObject.activeSelf) //color del cartucho, no la caja
                                 {
-                                    cartucho.transform.GetChild(0).gameObject.SetActive(true);
+                                    señalado.transform.GetChild(0).gameObject.SetActive(true);
                                     heldObject.gameObject.SetActive(false);
                                     heldObject = null;
                                 }
                             }
                             Debug.Log("Así no funciona! Intentalo al revés!");
                         }
-                        else
-                        {
-                            LeaveItem();
-                        }
+                        else LeaveItem();
                     }
                 }
+                else LeaveItem();
             }
-            else if (Physics.Raycast(fpsCam.transform.position, direction, out hit, range) && heldObject.TryGetComponent(out TipoCartucho cajaCartucho1))
+            else if (Physics.Raycast(fpsCam.transform.position, direction, out hit, range) && heldObject.TryGetComponent(out TipoObjeto equipado))
             {
                 if (hit.transform.name == "SM_Printer")
                 {
@@ -147,40 +132,23 @@ public class InteractingSystem : MonoBehaviour
                         rb.useGravity = false;
                     }
                     heldObject.GetComponent<Collider>().enabled = true;
-                    heldObject.transform.position = cajaCartucho1.initialPoint.position;
-                    heldObject.transform.rotation = cajaCartucho1.initialPoint.rotation;
+                    heldObject.transform.position = equipado.initialPoint.position;
+                    heldObject.transform.rotation = equipado.initialPoint.rotation;
                     heldObject.transform.parent = null;
                     heldObject = null; //se queda en posición donde estaba actualmente o no
                 }
-                else
-                {
-                    LeaveItem();
-                }
+                
+                else LeaveItem();
+                
             }
             else
             {
                 LeaveItem();
             }
             
-            //lanzas un raycast, capa interactuable? si si y encaja con el objeto que estás sosteniendo, el impactado se apagará y se encenderá el hijo del heldobject
-            //despues ya no podrás despertar ningún hijo más, solo droppear el objeto o hacer interactuar en el sitio al que pertenezca y se meterá ahí
-
-            //hacer que si con la caja de cartucho le das a la impresora lo devuelva donde estaba: mismo nombre? o en un array en la impresora tienen putnos empty con el mismo orden que TipoCartucho
-
             //poner UI cuando hoverees sobre botones interactuables, donde puedes devolver tu objeto o abrir algo
             //UI semipermanente -> cuando tengas un heldObject se activará el texto del botón con el que puedes droppear el objeto
 
-            /*if (Physics.Raycast(fpsCam.transform.position, direction, out hit, range, impactLayer))
-            {
-                //AQUI PUEDO CODEAR TODOS LOS EFECTOS QUE QUIERO PARA MI INTERACCIÓN
-                Debug.Log(hit.collider.name);
-                heldObject = hit.collider.gameObject;
-                heldObject.transform.SetParent(fpsCam.transform);
-                heldObject.GetComponent<Collider>().enabled = false;
-                heldObject.transform.position = holdingPoint.position;
-            }*/
-            //Interactuar con el objeto que tengas -> heldObject es cajon para cartucho, y haces click en un cartucho, se recarga
-            //no puedes intereactuar más con ese y después le vuelves a dar donde estaba y se mete en su sitio
         }
         interacting = false;
 
@@ -233,14 +201,14 @@ public class InteractingSystem : MonoBehaviour
     #region Input Methods
     public void OnInteract(InputAction.CallbackContext ctx)
     {
-        if (allowButtonHold)
+        //if (allowButtonHold)
         {
-            interacting = ctx.ReadValueAsButton();
+            //interacting = ctx.ReadValueAsButton();
         }
-        else
-        {
+        //else
+        
             if (ctx.performed) interacting = true;
-        }
+        
     }
     public void OnLeaveItem(InputAction.CallbackContext ctx)
     {

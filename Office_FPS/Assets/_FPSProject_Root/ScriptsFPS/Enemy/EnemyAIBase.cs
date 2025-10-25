@@ -13,9 +13,10 @@ public class EnemyAIBase : MonoBehaviour
     [Header("Patroling Stats")]
     [SerializeField] float walkPointRange = 10f; //Radio máximo de generación de puntos a perseguir
     Vector3 walkPoint; //Posición del punto random a perseguir
-    bool walkPointSet;
+    [SerializeField]bool walkPointSet;
+    [SerializeField] Transform[] destinations;
 
-    [Header("Attacking Stats")]
+    [Header("Interacting Stats")]
     [SerializeField] float timeBetweenAttacks = 1f; //Tiempo entre ataque y ataque
     [SerializeField] GameObject projectile; //Ref al prefab del proyectil
     [SerializeField] Transform shootPoint; //Ref a la posición desde la que se dispara
@@ -41,7 +42,6 @@ public class EnemyAIBase : MonoBehaviour
 
     private void Awake()
     {
-        target = GameObject.Find("PF_Player").transform;
         agent = GetComponent<NavMeshAgent>();
         lastPosition = transform.position;
         lastCheckTime = Time.time;
@@ -56,7 +56,7 @@ public class EnemyAIBase : MonoBehaviour
 
     void EnemyStateUpdater()
     {
-        //Acción que se encarga de actualizar el estado del enemigo
+        /*//Acción que se encarga de actualizar el estado del enemigo
 
         //Detectar un solo query de físicas
         Collider[] hits = Physics.OverlapSphere(transform.position, sightRange, targetLayer);
@@ -71,56 +71,37 @@ public class EnemyAIBase : MonoBehaviour
 
         // Actualziación de los estados de la IA
         if (!targetInSightRange && !targetInAttackRange) 
-        {
-            Patroling();
+        {*/
+            Patroling();/*
         }
         else if ( targetInSightRange && !targetInAttackRange)
         {
             ChaseTarget();
         }
-        else if (targetInSightRange && targetInAttackRange)
+        /*else if (targetInSightRange && targetInAttackRange)
         {
             AttackTarget();
-        }
+        }*/
     }
 
     void Patroling()
     {
-        //Cuando se ejecute, el enemigo patrulla
+        int randomDestination = 0;
         if (!walkPointSet)
         {
-            //Si walkpointset es falso, no hay punto a perseguir, entonces debe generarlo
-            SearchWalkPoint();
+            randomDestination = Random.Range(0, destinations.Length);
+            agent.SetDestination(destinations[randomDestination].position);
+            walkPointSet = true;
         }
-        else agent.SetDestination(walkPoint);
-
         //Distancia calculada mediante operación por magnitud entre vectores
-        if ((transform.position - walkPoint).sqrMagnitude < 1f)
+        else 
         {
-            walkPointSet = false;
+            if ((transform.position - destinations[randomDestination].position).sqrMagnitude < 1f) walkPointSet = false;
         }
     }
 
     void SearchWalkPoint()
     {
-        //Cuando ni persigue ni ataca, busca puntos a patrullar
-        int attempts = 0; //Número de intentos de generación de puntos óptimos
-        const int maxAttempts = 5;
-
-        while (!walkPointSet && attempts < maxAttempts) 
-        {
-            attempts++;
-            Vector3 randomPoint = transform.position + new Vector3(Random.Range(-walkPointRange, walkPointRange), 0, Random.Range(-walkPointRange, walkPointRange));
-
-            if (NavMesh.SamplePosition(randomPoint, out NavMeshHit hit, 2f, NavMesh.AllAreas))
-            {
-                walkPoint = hit.position; //Determina el punto random a perseguir
-                if (Physics.Raycast(walkPoint, -transform.up, 2f, groundLayer))
-                {
-                    walkPointSet = true;
-                }
-            }
-        }
     }
 
     void ChaseTarget()
@@ -129,7 +110,7 @@ public class EnemyAIBase : MonoBehaviour
         agent.SetDestination(target.position);
     }
 
-    void AttackTarget()
+    /*void AttackTarget()
     {
         //Acción que contiene la lógica compleja de ataque
 
@@ -160,7 +141,7 @@ public class EnemyAIBase : MonoBehaviour
     {
         //Acción que resetea el AttackTarget()
         alreadyAttacked = false;
-    }
+    }*/
 
     void CheckIfStuck()
     {

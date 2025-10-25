@@ -13,10 +13,9 @@ GameObject:
   - component: {fileID: 4485479196231359343}
   - component: {fileID: 2510887811425650927}
   - component: {fileID: 9013692102780379918}
-  - component: {fileID: 6324027534152749228}
   - component: {fileID: 3626161401677921772}
   - component: {fileID: 7688609948137223928}
-  m_Layer: 6
+  m_Layer: 0
   m_Name: EnemyBody
   m_TagString: Enemy
   m_Icon: {fileID: 0}
@@ -143,22 +142,6 @@ Rigidbody:
   m_Interpolate: 0
   m_Constraints: 112
   m_CollisionDetection: 1
---- !u!114 &6324027534152749228
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1245092916705629732}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 637da1f7b8009ed449ded96b3d0ac3b8, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  maxHealth: 100
-  health: 0
-  baseMat: {fileID: 0}
-  damagedMat: {fileID: 2100000, guid: 25e1f4d730f3b7a45892a0bc42adaa41, type: 2}
 --- !u!195 &3626161401677921772
 NavMeshAgent:
   m_ObjectHideFlags: 0
@@ -223,7 +206,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 2848061055988673932}
-  m_Layer: 6
+  m_Layer: 0
   m_Name: ShootPoint
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -289,7 +272,7 @@ GameObject:
   - component: {fileID: 5322516531795402642}
   - component: {fileID: 1374650634202458472}
   - component: {fileID: 6276934352037445751}
-  m_Layer: 6
+  m_Layer: 0
   m_Name: Orientation
   m_TagString: Untagged
   m_Icon: {fileID: 0}
