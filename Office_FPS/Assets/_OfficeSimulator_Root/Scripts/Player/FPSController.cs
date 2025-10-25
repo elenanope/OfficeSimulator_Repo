@@ -10,12 +10,10 @@ public class FPSController : MonoBehaviour
     [SerializeField] GameObject camHolder; //Ref en inspector al objeto a rotar
     [SerializeField] float speed = 5f;
     [SerializeField] float sprintSpeed = 8f;
-    [SerializeField] float crouchSpeed = 3f;
     [SerializeField] float maxForce = 1f; //Fuerza máxima de aceleración
     [SerializeField] float sensitivity = 0.1f;
 
     [Header("Jumping")]
-    [SerializeField] float jumpForce = 5f;
     [SerializeField] GameObject groundCheck;
     [SerializeField] float groundCheckRadius = 0.3f;
     [SerializeField] LayerMask groundLayer;
@@ -23,7 +21,6 @@ public class FPSController : MonoBehaviour
 
     [Header("Player State Bools")]
     [SerializeField] bool isSprinting;
-    [SerializeField] bool isCrouching;
     #endregion
 
     //Object References
@@ -74,7 +71,7 @@ public class FPSController : MonoBehaviour
     {
         Vector3 currentVelocity = playerRb.linearVelocity;
         Vector3 targetVelocity = new Vector3(moveInput.x, 0, moveInput.y);
-        targetVelocity *= isCrouching ? crouchSpeed : (isSprinting ? sprintSpeed : speed);
+        targetVelocity *= isSprinting ? sprintSpeed : speed;
 
         //Convertir la dirección local en global
         targetVelocity = transform.TransformDirection(targetVelocity);
@@ -99,11 +96,6 @@ public class FPSController : MonoBehaviour
         camHolder.transform.localEulerAngles = new Vector3(lookRotation, 0f, 0f);
     }
 
-    void Jump()
-    {
-        if (isGrounded) playerRb.AddForce(Vector3.up * jumpForce, ForceMode.Impulse);
-    }
-
     #region Input Methods
     public void OnMove(InputAction.CallbackContext ctx)
     {
@@ -115,24 +107,9 @@ public class FPSController : MonoBehaviour
         lookInput = ctx.ReadValue<Vector2>();
     }
 
-    public void OnJump(InputAction.CallbackContext ctx)
-    {
-        if (ctx.performed) Jump();
-    }
-
-    public void OnCrouch(InputAction.CallbackContext ctx)
-    {
-        if (ctx.performed)
-        {
-            isCrouching = !isCrouching;
-            anim.SetBool("isCrouching", isCrouching);
-            //Añadir cambio animación
-        }
-    }
-
     public void OnSprint(InputAction.CallbackContext ctx)
     {
-        if (ctx.performed && !isCrouching) isSprinting = true;
+        if (ctx.performed) isSprinting = true;
         if (ctx.canceled) isSprinting = false;
     }
     #endregion

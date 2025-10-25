@@ -24,27 +24,9 @@
                     "initialStateCheck": true
                 },
                 {
-                    "name": "Jump",
-                    "type": "Button",
-                    "id": "ee44b264-24ee-4ddc-a715-0e02dedd0d0d",
-                    "expectedControlType": "",
-                    "processors": "",
-                    "interactions": "",
-                    "initialStateCheck": false
-                },
-                {
-                    "name": "Shoot",
+                    "name": "Interact",
                     "type": "Button",
                     "id": "20c14a4a-fdaf-420c-b889-d101100e243c",
-                    "expectedControlType": "",
-                    "processors": "",
-                    "interactions": "",
-                    "initialStateCheck": false
-                },
-                {
-                    "name": "Crouch",
-                    "type": "Button",
-                    "id": "9d41ea35-7e58-4ce1-863d-9c3f9a6f9430",
                     "expectedControlType": "",
                     "processors": "",
                     "interactions": "",
@@ -60,7 +42,7 @@
                     "initialStateCheck": false
                 },
                 {
-                    "name": "Reload",
+                    "name": "LeaveItem",
                     "type": "Button",
                     "id": "94131c1a-692d-4578-8fdc-caed91deaa44",
                     "expectedControlType": "",
@@ -160,34 +142,12 @@
                 },
                 {
                     "name": "",
-                    "id": "3bc412bf-50f3-409e-a9bd-bf9ef76162a5",
-                    "path": "<Gamepad>/buttonSouth",
-                    "interactions": "",
-                    "processors": "",
-                    "groups": "",
-                    "action": "Jump",
-                    "isComposite": false,
-                    "isPartOfComposite": false
-                },
-                {
-                    "name": "",
-                    "id": "3a20294c-2eeb-485b-bb02-489e381ea10f",
-                    "path": "<Keyboard>/space",
-                    "interactions": "",
-                    "processors": "",
-                    "groups": "",
-                    "action": "Jump",
-                    "isComposite": false,
-                    "isPartOfComposite": false
-                },
-                {
-                    "name": "",
                     "id": "97164dd0-c873-4a3a-9fce-f3f149095a59",
                     "path": "<Gamepad>/rightTrigger",
                     "interactions": "",
                     "processors": "",
                     "groups": "",
-                    "action": "Shoot",
+                    "action": "Interact",
                     "isComposite": false,
                     "isPartOfComposite": false
                 },
@@ -198,29 +158,7 @@
                     "interactions": "",
                     "processors": "",
                     "groups": "",
-                    "action": "Shoot",
-                    "isComposite": false,
-                    "isPartOfComposite": false
-                },
-                {
-                    "name": "",
-                    "id": "6d4d5b98-11df-4b73-a9be-9b3b532cc245",
-                    "path": "<Gamepad>/rightStickPress",
-                    "interactions": "",
-                    "processors": "",
-                    "groups": "",
-                    "action": "Crouch",
-                    "isComposite": false,
-                    "isPartOfComposite": false
-                },
-                {
-                    "name": "",
-                    "id": "4421568c-2b0b-4bc7-b08f-8ebaa3403237",
-                    "path": "<Keyboard>/shift",
-                    "interactions": "",
-                    "processors": "",
-                    "groups": "",
-                    "action": "Crouch",
+                    "action": "Interact",
                     "isComposite": false,
                     "isPartOfComposite": false
                 },
@@ -249,22 +187,22 @@
                 {
                     "name": "",
                     "id": "9e20d06a-cd52-43d0-9061-872edf73b7cb",
-                    "path": "<Gamepad>/buttonWest",
+                    "path": "<Gamepad>/leftTrigger",
                     "interactions": "",
                     "processors": "",
                     "groups": "",
-                    "action": "Reload",
+                    "action": "LeaveItem",
                     "isComposite": false,
                     "isPartOfComposite": false
                 },
                 {
                     "name": "",
                     "id": "a7348bac-7202-47d8-93b5-de71c8a70087",
-                    "path": "<Keyboard>/r",
+                    "path": "<Mouse>/rightButton",
                     "interactions": "",
                     "processors": "",
                     "groups": "",
-                    "action": "Reload",
+                    "action": "LeaveItem",
                     "isComposite": false,
                     "isPartOfComposite": false
                 }
