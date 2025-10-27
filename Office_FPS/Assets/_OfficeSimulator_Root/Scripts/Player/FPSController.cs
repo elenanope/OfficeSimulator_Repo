@@ -6,6 +6,10 @@ using UnityEngine.InputSystem;
 public class FPSController : MonoBehaviour
 {
     #region General Variables
+    [SerializeField] int energy = 100;
+    [SerializeField] float secondsOfEnergy = 180f;//3 o 4 minutos
+    
+
     [Header("Movement & Look")]
     [SerializeField] GameObject camHolder; //Ref en inspector al objeto a rotar
     [SerializeField] float speed = 5f;
@@ -50,6 +54,8 @@ public class FPSController : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
+        energy -= Time.time * (10 / 18); //comprobar: que se vaya agotando la energía
+
         //Groundcheck
         isGrounded = Physics.CheckSphere(groundCheck.transform.position, groundCheckRadius, groundLayer);
         //Debug ray: visible only in Scene
