@@ -9,6 +9,8 @@ public class InteractingSystem : MonoBehaviour
     [SerializeField] Camera fpsCam; //Ref si disparamos desde el centro de la cam
     [SerializeField] LayerMask impactLayer; //Layer con la que el Raycast interactúa
     RaycastHit hit; //Almacén de la información de los objetos con los que impactan los disparos
+    FPSController scriptController;
+    CoffeeMaker coffeeMaker = null;
     
 
     [Header("Interacting Parameters")]
@@ -26,12 +28,14 @@ public class InteractingSystem : MonoBehaviour
     [SerializeField] bool interacting; //Indica que estamos disparando
     [SerializeField] bool leaving; //Indica que estamos disparando
     [SerializeField] bool canInteract; //Indica que en este momento del juego se puede disparar
-     bool reloadingCoffee; //Indica si estamos en proceso de recarga
+     bool isHoldingCoffee; //Indica si podemos recargar
+     bool reloadingCoffee;
 
     #endregion
 
     private void Awake()
     {
+        scriptController = GetComponent<FPSController>();
         canInteract = true;
     }
 
@@ -70,16 +74,26 @@ public class InteractingSystem : MonoBehaviour
             //Physics.Raycast(Origen del rayo, dirección, almacén de info de impacto, longitud del rayo, layer a la que impacta (opcional)
             if (Physics.Raycast(fpsCam.transform.position, direction, out hit, range, impactLayer))
             {
-                Debug.Log(hit.collider.name);
-                heldObject = hit.collider.gameObject;
-                heldObject.transform.SetParent(fpsCam.transform);
-                heldObject.GetComponent<Collider>().enabled = false;
-                if (heldObject.TryGetComponent(out Rigidbody rb))
+                if(hit.collider.GetComponent<CoffeeMaker>() != null)
                 {
-                    rb.isKinematic = true;
-                    rb.useGravity = false;
+                    hit.collider.GetComponent<CoffeeMaker>().PressButton();
+                    //primero que pongas la taza y caiga el liquido, después ya recharge
+
                 }
-                heldObject.transform.position = holdingPoint.position;
+                else
+                {
+                    Debug.Log(hit.collider.name);
+                    heldObject = hit.collider.gameObject;
+                    heldObject.transform.SetParent(fpsCam.transform);
+                    heldObject.GetComponent<Collider>().enabled = false;
+                    if (heldObject.TryGetComponent(out Rigidbody rb))
+                    {
+                        rb.isKinematic = true;
+                        rb.useGravity = false;
+                    }
+                    heldObject.transform.position = holdingPoint.position;
+                }
+                
             }
         }
         else
@@ -192,27 +206,33 @@ public class InteractingSystem : MonoBehaviour
 
     IEnumerator ReloadRoutine()
     {
+        isHoldingCoffee = false;
         reloadingCoffee = true;
         //Se llama a la animación de recarga
         yield return new WaitForSeconds(reloadTime);
+        scriptController.energy += 50;
+        if (scriptController.energy > 100) scriptController.energy = 100;
         reloadingCoffee = false;
     }
 
     #region Input Methods
     public void OnInteract(InputAction.CallbackContext ctx)
     {
-        //if (allowButtonHold)
-        {
-            //interacting = ctx.ReadValueAsButton();
-        }
-        //else
-        
-            if (ctx.performed) interacting = true;
-        
+        if (ctx.performed) interacting = true;
     }
-    public void OnLeaveItem(InputAction.CallbackContext ctx)
+    public void OnRecharge(InputAction.CallbackContext ctx)
     {
-        if (ctx.performed) leaving = true;
+        if(ctx.performed)
+        {
+            if(isHoldingCoffee)
+            {
+                StartCoroutine(ReloadRoutine());
+            }
+            else
+            {
+                //No puedo consumir nada!
+            }
+        }
     }
 
 

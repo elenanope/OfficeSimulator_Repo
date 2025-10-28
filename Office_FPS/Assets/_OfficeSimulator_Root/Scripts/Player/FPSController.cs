@@ -6,7 +6,7 @@ using UnityEngine.InputSystem;
 public class FPSController : MonoBehaviour
 {
     #region General Variables
-    [SerializeField] int energy = 100;
+    public float energy = 100;
     [SerializeField] float secondsOfEnergy = 180f;//3 o 4 minutos
     
 
@@ -54,8 +54,12 @@ public class FPSController : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        energy -= Time.time * (10 / 18); //comprobar: que se vaya agotando la energía
-
+        energy -= Time.deltaTime * (10f / 18f); //comprobar: que se vaya agotando la energía
+        if(energy <= 0)
+        {
+            //Método de perder
+            Debug.Log("Game over!!");
+        }
         //Groundcheck
         isGrounded = Physics.CheckSphere(groundCheck.transform.position, groundCheckRadius, groundLayer);
         //Debug ray: visible only in Scene
