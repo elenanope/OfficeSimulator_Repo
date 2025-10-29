@@ -42,7 +42,7 @@
                     "initialStateCheck": false
                 },
                 {
-                    "name": "LeaveItem",
+                    "name": "Drink",
                     "type": "Button",
                     "id": "94131c1a-692d-4578-8fdc-caed91deaa44",
                     "expectedControlType": "",
@@ -191,7 +191,7 @@
                     "interactions": "",
                     "processors": "",
                     "groups": "",
-                    "action": "LeaveItem",
+                    "action": "Drink",
                     "isComposite": false,
                     "isPartOfComposite": false
                 },
@@ -202,7 +202,7 @@
                     "interactions": "",
                     "processors": "",
                     "groups": "",
-                    "action": "LeaveItem",
+                    "action": "Drink",
                     "isComposite": false,
                     "isPartOfComposite": false
                 }

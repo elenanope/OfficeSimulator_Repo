@@ -144,11 +144,6 @@ public class NPCAIBase : MonoBehaviour
             {
                 if(obstacle.enabled) obstacle.enabled = false;//echarle un ojo
                 if(!agent.enabled) agent.enabled = true;
-                /*if(workDone > 90)//o que cuando llegue a 100 tiene que hacer otra actividad y las otras necesidades subirán +20/+40  por ejemplo
-                {Debug.Log("Ya ha trabajado suficiente");
-                    //Si cualquiera de ellos es mayor que 95 irás a ese, si más de uno es mayor que 95, random entre esos
-                    //Sino, todo random}
-                else */
                 if (workDone >= 70)//si ya has trabajado mucho
                 {
                     if (gameManager.workingPeople < 7) //si hay muy poca gente trabajando actualmente
@@ -174,7 +169,6 @@ public class NPCAIBase : MonoBehaviour
                 }
                 else
                 {
-                    //poner que aunque no haya gente trabajando, si alguna de tus stats son 100, las haces y ya
                     if(gameManager.workingPeople < 5) //si hay muy poca gente trabajando de verdad
                     {
                         MomentaryWork();
@@ -200,16 +194,8 @@ public class NPCAIBase : MonoBehaviour
                         }
                         else
                         {
-                            if (!gameManager.someoneInSecretary)
-                            {
-                                //Debug.Log("Se incluye visitar la secretaría");
-                                ChooseActivity(60, 10, 10, 10);
-                            }
-                            else
-                            {
-                                //Debug.Log("No se incluye visitar la secretaría");
-                                ChooseActivity(70, 10, 10, 11);
-                            }
+                            if (!gameManager.someoneInSecretary) ChooseActivity(60, 10, 10, 10);
+                            else ChooseActivity(70, 10, 10, 11);
                         }
                         
                         //if no hay nadie en secretaria, se incluye VisitSecretary()
@@ -218,33 +204,6 @@ public class NPCAIBase : MonoBehaviour
                     if(secretaryNeed < 70) satAtWorkdesk = true;
                     else satAtWorkdesk = false;
                 }
-                /*if(activityToDo != -1)
-                {
-                    switch(activityToDo)
-                {
-                    case 0:
-                        MomentaryWork();
-                        break;
-
-                    case 1:
-                        Eat();
-                        break;
-
-                    case 2:
-                        Socialize();
-                        break;
-
-                    case 3:
-                        TakeBreak();
-                        break;
-
-                    case 4:
-                        VisitSecretary();
-                        break;
-                }
-                goalSet = true;
-                }*/
-
             }
             else if(goalSet && walkPointSet)
             {/*NPC stopper
@@ -296,7 +255,7 @@ public class NPCAIBase : MonoBehaviour
         {
             walkPointSet = false;
             satAtWorkdesk = true;
-            Debug.Log("Soy " + name + "Mi última actividad era trabajar, así que ya estoy en el sitio");
+            //Debug.Log("Soy " + name + "Mi última actividad era trabajar, así que ya estoy en el sitio");
         }
         else
         {
@@ -305,11 +264,11 @@ public class NPCAIBase : MonoBehaviour
             walkPointSet = true;
             agent.SetDestination(destinations[activityToDo].position);
             //Volver a tu mesa
-            Debug.Log("Soy " + name + "Mi última actividad no era trabajar pero ahora sí, así que vuelvo al sitio");
+            //Debug.Log("Soy " + name + "Mi última actividad no era trabajar pero ahora sí, así que vuelvo al sitio");
         }
         if (waiting)
         {
-            Debug.Log("Soy " + name + "Estoy trabajando, pero esperando! Porque mi nivel de trabajo" + workDone);
+            //Debug.Log("Soy " + name + "Estoy trabajando, pero esperando! Porque mi nivel de trabajo" + workDone);
             //Hacer IEnumerator?
             //walkPointSet = true, pero que se quede en el sitio
             //Trabaja durante 20 segundos y vuelve a checkear si puede irse
@@ -318,7 +277,7 @@ public class NPCAIBase : MonoBehaviour
         }
         else
         {
-            Debug.Log("Soy " + name + "Estoy trabajando! Porque mi nivel de trabajo es:" + workDone);
+            //Debug.Log("Soy " + name + "Estoy trabajando! Porque mi nivel de trabajo es:" + workDone);
             //Ponerse a trabajar
             //30-45 segundos trabajando
             StartCoroutine(ActivityDuration(30, 45));
@@ -341,13 +300,13 @@ public class NPCAIBase : MonoBehaviour
         }
         if(satAtWorkdesk) //o todas las sillas de la cafetería están llenas
         {
-            Debug.Log("Soy " + name + "Estoy comiendo en mi mesa! Porque mis niveles de trabajo y de comer son:" + workDone + ", " + hunger);
+            //Debug.Log("Soy " + name + "Estoy comiendo en mi mesa! Porque mis niveles de trabajo y de comer son:" + workDone + ", " + hunger);
             if(lastActivity != 0) agent.SetDestination(destinations[0].position); //para que se siente en su mesa
             //si tienes hambre sacas la comida a tu mesa
         }
         else
         {
-            Debug.Log("Soy " + name + "Estoy comiendo en un lugar! Porque mis niveles de trabajo y de comida son:" + workDone + ", " + hunger);
+            //Debug.Log("Soy " + name + "Estoy comiendo en un lugar! Porque mis niveles de trabajo y de comida son:" + workDone + ", " + hunger);
             walkPointSet = true;
             if (lastActivity != activityToDo)
             {
@@ -370,14 +329,14 @@ public class NPCAIBase : MonoBehaviour
         if (lastActivity == 0) gameManager.workingPeople--;
         if (satAtWorkdesk)
         {
-            Debug.Log("Soy " + name + "Estoy socializando en mi mesa! Porque mis niveles de trabajo y de socializar son:" + workDone + ", " + socializationNeed);
+            //Debug.Log("Soy " + name + "Estoy socializando en mi mesa! Porque mis niveles de trabajo y de socializar son:" + workDone + ", " + socializationNeed);
             if (lastActivity != 0) agent.SetDestination(destinations[0].position); //para que se siente en su mesa
             //si quieres socializar, llamas por telefono a otro que esté en su mesa
             //Animación de llamar por teléfono a alguien random de la oficina (al que llames, se considerará que si está trabajando?)
         }
         else
         {
-            Debug.Log("Soy " + name + "Estoy socializando en un lugar! Porque mis niveles de trabajo y de socializar son:" + workDone + ", " + socializationNeed);
+            //Debug.Log("Soy " + name + "Estoy socializando en un lugar! Porque mis niveles de trabajo y de socializar son:" + workDone + ", " + socializationNeed);
             walkPointSet = true;
             if (lastActivity != activityToDo) agent.SetDestination(destinations[activityToDo].position); //punto random de emsa de otro
             //15-35 segundos?
@@ -393,13 +352,13 @@ public class NPCAIBase : MonoBehaviour
 
         if (satAtWorkdesk)
         {
-            Debug.Log("Soy " + name +" Descansando en mi mesa! Niveles de trabajo y de descansar son:" + workDone + ", " + needForBreak);
+            //Debug.Log("Soy " + name +" Descansando en mi mesa! Niveles de trabajo y de descansar son:" + workDone + ", " + needForBreak);
             //si necesitas un descanso, te duermes en la mesa
             if (lastActivity != 0) agent.SetDestination(destinations[0].position); //para que se siente en su mesa
         }
         else
         {
-            Debug.Log("Soy " + name + "Descansando en un lugar! Niveles de trabajo y de descansar son:" + workDone + ", " + needForBreak);
+            //Debug.Log("Soy " + name + "Descansando en un lugar! Niveles de trabajo y de descansar son:" + workDone + ", " + needForBreak);
             walkPointSet = true;
             if (lastActivity != activityToDo) agent.SetDestination(destinations[activityToDo].position);//te manda a un punto fuera del edificio (o se van en ascensor que tiene un collider para ti)
             //40-90 segundos?
@@ -412,7 +371,7 @@ public class NPCAIBase : MonoBehaviour
         activityToDo = 4;
         if (lastActivity == 0) gameManager.workingPeople--;
         gameManager.someoneInSecretary = true;
-        Debug.Log("Soy " + name + "Estoy en secretaría! Porque mis niveles de trabajo y de secretaría son:" + workDone + ", " + secretaryNeed);
+        //Debug.Log("Soy " + name + "Estoy en secretaría! Porque mis niveles de trabajo y de secretaría son:" + workDone + ", " + secretaryNeed);
         walkPointSet = true;
         agent.SetDestination(destinations[activityToDo].position);
         //se elige actividad entre grapar, triturar, fotocopiar, imprimir, etc.?
@@ -450,7 +409,7 @@ public class NPCAIBase : MonoBehaviour
             }
 
             float timeToSpend = Random.Range(min, max +1);//yield return new WaitForSeconds(Random.Range(min, max + 1));
-            Debug.Log(name + ", estaré este tiempo en la actividad:" + timeToSpend);
+            //Debug.Log(name + ", estaré este tiempo en la actividad:" + timeToSpend);
             yield return new WaitForSeconds(timeToSpend);
 
             if (activityToDo == 0)
@@ -503,7 +462,7 @@ public class NPCAIBase : MonoBehaviour
         {
             yield return new WaitForSeconds(2);
             StartCoroutine(ActivityDuration(min, max)); //Va a crear problemas??
-            Debug.Log("Retry!");
+            //Debug.Log("Retry!");
             //yield break;
         }
     }
@@ -514,13 +473,7 @@ public class NPCAIBase : MonoBehaviour
     {
         arrived = true;
         /*if(lastActivity == 2 && !interrupted) //si es un lugar de sentarse
-        {
-            animator.SetBool("isSitting", true);
-            transform.position = destinations[lastActivity].position;
-            transform.rotation = destinations[lastActivity].rotation;
-            agent.SetDestination(transform.position);
-            rb.isKinematic = true;
-        } //else if de que si es interrupted que alguno de los dos rote o deje pasar al otro
+        {}else if de que si es interrupted que alguno de los dos rote o deje pasar al otro
         else*/
         {//Pasar datos al otro IEnumerator!!!!
             agent.SetDestination(transform.position);

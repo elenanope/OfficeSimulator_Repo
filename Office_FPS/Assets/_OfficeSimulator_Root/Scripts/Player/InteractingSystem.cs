@@ -30,6 +30,7 @@ public class InteractingSystem : MonoBehaviour
     [SerializeField] bool canInteract; //Indica que en este momento del juego se puede disparar
      bool isHoldingCoffee; //Indica si podemos recargar
      bool reloadingCoffee;
+    Mug mug;
 
     #endregion
 
@@ -77,11 +78,22 @@ public class InteractingSystem : MonoBehaviour
                 if(hit.collider.GetComponent<CoffeeMaker>() != null)
                 {
                     hit.collider.GetComponent<CoffeeMaker>().PressButton();
+
                     //primero que pongas la taza y caiga el liquido, después ya recharge
 
                 }
                 else
                 {
+                    if (hit.collider.GetComponent<Mug>() != null)
+                    {
+                        mug = hit.collider.GetComponent<Mug>();
+                        if(coffeeMaker != null && coffeeMaker.mug == mug)
+                        {
+                            coffeeMaker.AdministrateMug(false, mug);
+                        }
+                        if (mug.isFull) isHoldingCoffee = true;
+                        else isHoldingCoffee = false;
+                    }
                     Debug.Log(hit.collider.name);
                     heldObject = hit.collider.gameObject;
                     heldObject.transform.SetParent(fpsCam.transform);
@@ -135,21 +147,48 @@ public class InteractingSystem : MonoBehaviour
                 }
                 else LeaveItem();
             }
-            else if (Physics.Raycast(fpsCam.transform.position, direction, out hit, range) && heldObject.TryGetComponent(out TipoObjeto equipado))
+            else if (Physics.Raycast(fpsCam.transform.position, direction, out hit, range) && heldObject.TryGetComponent(out TipoObjeto sostenido))
             {
-                if (hit.transform.name == "SM_Printer")
+                if (hit.transform.name == "SM_Printer" || hit.transform.name == "SM_CoffeeMaker_Body")
                 {
-                    Debug.Log("Impresora tocada");
-                    if (heldObject.TryGetComponent(out Rigidbody rb))
+                    if(sostenido.objectType == hit.collider.GetComponent<TipoObjeto>().objectType)
                     {
-                        rb.isKinematic = true;
-                        rb.useGravity = false;
+                        if (heldObject.TryGetComponent(out Rigidbody rb))
+                        {
+                            rb.isKinematic = true;
+                            rb.useGravity = false;
+                        }
+                        heldObject.GetComponent<Collider>().enabled = true;
+                        if(sostenido.initialPoint != null)
+                        {
+                            
+                            if (hit.transform.GetComponentInParent<CoffeeMaker>() != null)
+                            {
+                                
+                                coffeeMaker = hit.transform.GetComponentInParent<CoffeeMaker>();
+                                if(!coffeeMaker.hasMug)
+                                {
+                                    heldObject.transform.position = sostenido.initialPoint.position;
+                                    heldObject.transform.rotation = sostenido.initialPoint.rotation;
+                                    coffeeMaker.AdministrateMug(true, mug);
+                                    if (mug != null) mug = null;
+                                }
+                                else
+                                {
+                                    Debug.Log("Ya hay una taza");
+                                }
+                                    
+                            }
+                            else
+                            {
+                                heldObject.transform.position = sostenido.initialPoint.position;
+                                heldObject.transform.rotation = sostenido.initialPoint.rotation;
+                            }
+                        }
+                        heldObject.transform.parent = null;
+                        heldObject = null; //se queda en posición donde estaba actualmente o no
                     }
-                    heldObject.GetComponent<Collider>().enabled = true;
-                    heldObject.transform.position = equipado.initialPoint.position;
-                    heldObject.transform.rotation = equipado.initialPoint.rotation;
-                    heldObject.transform.parent = null;
-                    heldObject = null; //se queda en posición donde estaba actualmente o no
+                    
                 }
                 
                 else LeaveItem();
@@ -174,18 +213,17 @@ public class InteractingSystem : MonoBehaviour
         leaving = false;
         if (Physics.Raycast(fpsCam.transform.position, direction, out hit, range))
         {
-            //AQUI PUEDO CODEAR TODOS LOS EFECTOS QUE QUIERO PARA MI INTERACCIÓN
-            Debug.Log(hit.collider.name);
+            if (mug != null) mug = null;
+            //Debug.Log(hit.collider.name);
             Vector3 dropPosition = hit.point + hit.normal * 0.1f;
             heldObject.transform.position = dropPosition;
-            Debug.Log(hit.point);
+            //Debug.Log(hit.point);
             //if (hit.collider.CompareTag("Walls")) heldObject.transform.position = new Vector3(hit.transform.position.x, hit.transform.position.y, hit.transform.position.z);
             //else heldObject.transform.position = new Vector3 (hit.transform.position.x, hit.transform.position.y + 1, hit.transform.position.z);
             if (heldObject.TryGetComponent(out Rigidbody rb))
             {
                 rb.isKinematic = false;
                 rb.useGravity = true;
-                Debug.Log("Rigidbody restaured!");
             }
             heldObject.GetComponent<Collider>().enabled = true;
             heldObject.transform.parent = null;
@@ -206,13 +244,18 @@ public class InteractingSystem : MonoBehaviour
 
     IEnumerator ReloadRoutine()
     {
+        Animator mugAnim = mug.gameObject.GetComponent<Animator>();
+        mugAnim.SetBool("isFull", false);
         isHoldingCoffee = false;
         reloadingCoffee = true;
+        mug.isFull = false;
         //Se llama a la animación de recarga
-        yield return new WaitForSeconds(reloadTime);
+        //yield return new WaitForSeconds(reloadTime);
         scriptController.energy += 50;
+        Debug.Log("Se ha añadido energía");
         if (scriptController.energy > 100) scriptController.energy = 100;
         reloadingCoffee = false;
+        yield return null;
     }
 
     #region Input Methods
@@ -226,6 +269,7 @@ public class InteractingSystem : MonoBehaviour
         {
             if(isHoldingCoffee)
             {
+                
                 StartCoroutine(ReloadRoutine());
             }
             else
