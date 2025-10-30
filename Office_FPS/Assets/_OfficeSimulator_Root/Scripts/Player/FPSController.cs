@@ -1,3 +1,4 @@
+using System.Collections;
 using NUnit.Framework.Internal.Commands;
 using Unity.VisualScripting;
 using UnityEngine;
@@ -22,6 +23,7 @@ public class FPSController : MonoBehaviour
     [SerializeField] float groundCheckRadius = 0.3f;
     [SerializeField] LayerMask groundLayer;
     bool isGrounded;
+    bool isBlinking;
 
     [Header("Player State Bools")]
     [SerializeField] bool isSprinting;
@@ -29,7 +31,7 @@ public class FPSController : MonoBehaviour
 
     //Object References
     Rigidbody playerRb;
-    Animator anim;
+    [SerializeField]Animator anim;
 
     //Input Variables
     Vector2 moveInput;
@@ -39,7 +41,6 @@ public class FPSController : MonoBehaviour
     private void Awake()
     {
         playerRb = GetComponent<Rigidbody>();
-        anim = GetComponent<Animator>();
     }
 
 
@@ -58,13 +59,17 @@ public class FPSController : MonoBehaviour
         if(energy <= 0)
         {
             //Método de perder
+            //Animación de blinking y se escucha un golpe en el suelo (thump)
             Debug.Log("Game over!!");
         }
         //Groundcheck
         isGrounded = Physics.CheckSphere(groundCheck.transform.position, groundCheckRadius, groundLayer);
         //Debug ray: visible only in Scene
         Debug.DrawRay(camHolder.transform.position, camHolder.transform.forward * 100f, Color.red);
-
+        if(energy >=20 && !isBlinking)
+        {
+            StartCoroutine(Blinking());
+        }
     }
 
     private void FixedUpdate()
@@ -82,7 +87,7 @@ public class FPSController : MonoBehaviour
         Vector3 currentVelocity = playerRb.linearVelocity;
         Vector3 targetVelocity = new Vector3(moveInput.x, 0, moveInput.y);
         targetVelocity *= isSprinting ? sprintSpeed : speed;
-
+        
         //Convertir la dirección local en global
         targetVelocity = transform.TransformDirection(targetVelocity);
 
@@ -90,7 +95,11 @@ public class FPSController : MonoBehaviour
         Vector3 velocityChange = (targetVelocity - currentVelocity);
         velocityChange = new Vector3(velocityChange.x, 0, velocityChange.z);
         velocityChange = Vector3.ClampMagnitude(velocityChange, maxForce);
-
+        if(moveInput.x > 0 || moveInput.y > 0)
+        {
+            anim.SetBool("isWalking", true);
+        }
+        else anim.SetBool("isWalking", false);
         //Aplicar la fuerza de movimiento
         playerRb.AddForce(velocityChange, ForceMode.VelocityChange);
     }
@@ -104,6 +113,14 @@ public class FPSController : MonoBehaviour
         lookRotation += (-lookInput.y * sensitivity);
         lookRotation = Mathf.Clamp(lookRotation, -90, 90);
         camHolder.transform.localEulerAngles = new Vector3(lookRotation, 0f, 0f);
+    }
+    IEnumerator Blinking()
+    {
+        isBlinking = true;
+        //animación parpadeo
+        yield return new WaitForSeconds(2);
+        isBlinking = false;
+        yield return null;
     }
 
     #region Input Methods

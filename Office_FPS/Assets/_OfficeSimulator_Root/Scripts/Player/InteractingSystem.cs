@@ -119,7 +119,7 @@ public class InteractingSystem : MonoBehaviour
                     {
                         if (equipado.mainPart)
                         {
-                            if (equipado.objectType == señalado.objectType)
+                            if (equipado.objectType == señalado.objectType && equipado.cartridgeColour == señalado.cartridgeColour)
                             {
                                 if (!heldObject.transform.GetChild(0).gameObject.activeSelf)
                                 {
@@ -274,7 +274,8 @@ public class InteractingSystem : MonoBehaviour
             }
             else
             {
-                //No puedo consumir nada!
+                //No puedo hacer nada!
+                //si está con la grapadora, descontar grapas de un script aparte
             }
         }
     }

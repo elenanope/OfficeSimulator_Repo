@@ -60,6 +60,7 @@ public class NPCAIBase : MonoBehaviour
     bool waiting;
     bool firstTask = true;
     public bool favourDone;//cuando se realice la tarea de la secretaría
+    bool canAskYou;//cuando llegue a secretaría
     int seatNumber;
     float timePassed = -10;
     [SerializeField] int activityToDo = -1;
@@ -327,20 +328,19 @@ public class NPCAIBase : MonoBehaviour
         
         activityToDo = 2;
         if (lastActivity == 0) gameManager.workingPeople--;
-        if (satAtWorkdesk)
-        {
-            //Debug.Log("Soy " + name + "Estoy socializando en mi mesa! Porque mis niveles de trabajo y de socializar son:" + workDone + ", " + socializationNeed);
+        //if (satAtWorkdesk)
+        //{
             if (lastActivity != 0) agent.SetDestination(destinations[0].position); //para que se siente en su mesa
             //si quieres socializar, llamas por telefono a otro que esté en su mesa
             //Animación de llamar por teléfono a alguien random de la oficina (al que llames, se considerará que si está trabajando?)
-        }
-        else
+        //}
+        /*else QUITADO POR AHORA POR FALTA DE TIEMPO
         {
             //Debug.Log("Soy " + name + "Estoy socializando en un lugar! Porque mis niveles de trabajo y de socializar son:" + workDone + ", " + socializationNeed);
             walkPointSet = true;
             if (lastActivity != activityToDo) agent.SetDestination(destinations[activityToDo].position); //punto random de emsa de otro
             //15-35 segundos?
-        }
+        }*/
         StartCoroutine(ActivityDuration(15, 35));
         goalSet = true;
     }
@@ -374,13 +374,31 @@ public class NPCAIBase : MonoBehaviour
         //Debug.Log("Soy " + name + "Estoy en secretaría! Porque mis niveles de trabajo y de secretaría son:" + workDone + ", " + secretaryNeed);
         walkPointSet = true;
         agent.SetDestination(destinations[activityToDo].position);
-        //se elige actividad entre grapar, triturar, fotocopiar, imprimir, etc.?
+        //se elige actividad entre grapar, triturar, fotocopiar, imprimir, clasificar documentos, NO NPC, PERO SI OTROS: JEFE -> vaciar la papelera, VISITANTES -> acreditaciones  etc.?
         //se activa la paciencia
         //en el update, si la condicion de favourDone == true apagará el objeto, animación feliz y se irá a trabajar
 
         //te manda a la ventana de secretaría y pides algo a través de otro script que gestiona el diálogo y los objetos de oficina que spawnees
         // los objetos se quedarán en secretaría, se encienden y apagan ahí (un npc te pide algo, se encienden objetos separados o de cierta manera predeterminada, se lo das
         // si es lo que quería, se vuelve a apagar, se resetea sus posiciones y el npc se va como si nada)
+    }
+    public void AskForFavour()//Esto se llama al interactuar con el NPC
+    {
+        bool favourChosen = false;
+        if (!favourChosen)
+        {
+            favourChosen = true;
+            //Elegir petición actividad entre grapar, triturar, fotocopiar, imprimir, clasificar documentos
+
+        }
+        else
+        {
+            if (canAskYou)
+            {
+                //Enseñar diálogo con petición
+
+            }
+        }
     }
     #endregion
 
@@ -472,6 +490,10 @@ public class NPCAIBase : MonoBehaviour
     IEnumerator TimeInLocationRoutine()
     {
         arrived = true;
+        if(activityToDo == 4)
+        {
+            canAskYou = true;
+        }
         /*if(lastActivity == 2 && !interrupted) //si es un lugar de sentarse
         {}else if de que si es interrupted que alguno de los dos rote o deje pasar al otro
         else*/
