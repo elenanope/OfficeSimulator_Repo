@@ -97,6 +97,7 @@ GameObject:
   - component: {fileID: 6184654190522314738}
   - component: {fileID: 2257846529212888297}
   - component: {fileID: 6649409037489114895}
+  - component: {fileID: 5401425312701097790}
   m_Layer: 0
   m_Name: SM_Window_Special_Blocking
   m_TagString: Walls
@@ -172,6 +173,28 @@ MeshRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 0
   m_AdditionalVertexStreams: {fileID: 0}
+--- !u!64 &5401425312701097790
+MeshCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1846003959751426255}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 0
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 5
+  m_Convex: 0
+  m_CookingOptions: 30
+  m_Mesh: {fileID: 1728633990404662594, guid: bdc0a3c6680128c429504595ba5109d0, type: 3}
 --- !u!1 &3023561429119992498
 GameObject:
   m_ObjectHideFlags: 0
