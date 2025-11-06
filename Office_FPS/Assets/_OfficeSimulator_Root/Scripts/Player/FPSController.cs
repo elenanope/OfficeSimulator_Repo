@@ -3,6 +3,7 @@ using NUnit.Framework.Internal.Commands;
 using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.InputSystem;
+using UnityEngine.UI;
 
 public class FPSController : MonoBehaviour
 {
@@ -18,15 +19,8 @@ public class FPSController : MonoBehaviour
     [SerializeField] float maxForce = 1f; //Fuerza máxima de aceleración
     [SerializeField] float sensitivity = 0.1f;
 
-    [Header("Jumping")]
-    [SerializeField] GameObject groundCheck;
-    [SerializeField] float groundCheckRadius = 0.3f;
-    [SerializeField] LayerMask groundLayer;
-    bool isGrounded;
     bool isBlinking;
 
-    [Header("Player State Bools")]
-    [SerializeField] bool isSprinting;
     #endregion
 
     //Object References
@@ -37,10 +31,13 @@ public class FPSController : MonoBehaviour
     Vector2 moveInput;
     Vector2 lookInput;
     float lookRotation;
-
+    [SerializeField] GameManager gameManager;
+    [SerializeField] Image energyBarFill;
+    [SerializeField] GameObject blinkingPanel;
     private void Awake()
     {
         playerRb = GetComponent<Rigidbody>();
+        blinkingPanel.SetActive(false);
     }
 
 
@@ -56,20 +53,26 @@ public class FPSController : MonoBehaviour
     void Update()
     {
         energy -= Time.deltaTime * (10f / 18f); //comprobar: que se vaya agotando la energía
-        if(energy <= 0)
+        energyBarFill.fillAmount = energy / 100;
+        if(energy <= 0 || gameManager.strikes >=3)
         {
             //Método de perder
             //Animación de blinking y se escucha un golpe en el suelo (thump)
             Debug.Log("Game over!!");
         }
-        //Groundcheck
-        isGrounded = Physics.CheckSphere(groundCheck.transform.position, groundCheckRadius, groundLayer);
         //Debug ray: visible only in Scene
         Debug.DrawRay(camHolder.transform.position, camHolder.transform.forward * 100f, Color.red);
-        if(energy >=20 && !isBlinking)
+        if(energy <=20 && energy > 10 && !isBlinking)
         {
-            StartCoroutine(Blinking());
+            blinkingPanel.SetActive(true);
+            //StartCoroutine(Blinking(2));
         }
+        else if(energy <=10 && !isBlinking)
+        {
+            //StopCoroutine(Blinking(2));
+            //StartCoroutine(Blinking(1));
+        }
+        else if (isBlinking && energy > 20) blinkingPanel.SetActive(false);
     }
 
     private void FixedUpdate()
@@ -86,7 +89,7 @@ public class FPSController : MonoBehaviour
     {
         Vector3 currentVelocity = playerRb.linearVelocity;
         Vector3 targetVelocity = new Vector3(moveInput.x, 0, moveInput.y);
-        targetVelocity *= isSprinting ? sprintSpeed : speed;
+        targetVelocity *= speed;
         
         //Convertir la dirección local en global
         targetVelocity = transform.TransformDirection(targetVelocity);
@@ -111,14 +114,14 @@ public class FPSController : MonoBehaviour
         transform.Rotate(Vector3.up * lookInput.x * sensitivity);
         //Vertical rotation (camera)
         lookRotation += (-lookInput.y * sensitivity);
-        lookRotation = Mathf.Clamp(lookRotation, -90, 90);
+        lookRotation = Mathf.Clamp(lookRotation, -90, 60);
         camHolder.transform.localEulerAngles = new Vector3(lookRotation, 0f, 0f);
     }
-    IEnumerator Blinking()
+    IEnumerator Blinking(int secondsInBetween)
     {
         isBlinking = true;
         //animación parpadeo
-        yield return new WaitForSeconds(2);
+        yield return new WaitForSeconds(secondsInBetween);
         isBlinking = false;
         yield return null;
     }
@@ -134,10 +137,5 @@ public class FPSController : MonoBehaviour
         lookInput = ctx.ReadValue<Vector2>();
     }
 
-    public void OnSprint(InputAction.CallbackContext ctx)
-    {
-        if (ctx.performed) isSprinting = true;
-        if (ctx.canceled) isSprinting = false;
-    }
     #endregion
 }

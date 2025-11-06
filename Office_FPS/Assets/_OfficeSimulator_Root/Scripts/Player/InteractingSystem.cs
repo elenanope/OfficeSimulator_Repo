@@ -8,6 +8,7 @@ public class InteractingSystem : MonoBehaviour
     [Header("General References")]
     [SerializeField] Camera fpsCam; //Ref si disparamos desde el centro de la cam
     [SerializeField] LayerMask impactLayer; //Layer con la que el Raycast interactúa
+    [SerializeField] LayerMask NPCLayer;
     RaycastHit hit; //Almacén de la información de los objetos con los que impactan los disparos
     FPSController scriptController;
     CoffeeMaker coffeeMaker = null;
@@ -23,6 +24,7 @@ public class InteractingSystem : MonoBehaviour
 
     [Header("Feedback References")]
     [SerializeField] GameObject impactEffect; //Referencia al VFX de impacto de bala
+    [SerializeField] GameManager gameManager;
 
     //Bools de estado
     [SerializeField] bool interacting; //Indica que estamos disparando
@@ -30,7 +32,9 @@ public class InteractingSystem : MonoBehaviour
     [SerializeField] bool canInteract; //Indica que en este momento del juego se puede disparar
      bool isHoldingCoffee; //Indica si podemos recargar
      bool reloadingCoffee;
+    int taskDone = -1;
     Mug mug;
+    public NPCAIBase npcAtFrontDesk = null;
 
     #endregion
 
@@ -43,10 +47,12 @@ public class InteractingSystem : MonoBehaviour
     void Start()
     {
         //impactEffect.SetActive(false); //Apaga el efecto de impacto al iniciar el juego
+
     }
 
     void Update()
     {
+        if (!gameManager.someoneInSecretary && npcAtFrontDesk != null) npcAtFrontDesk = null;
         if (!reloadingCoffee)
         {
             if (interacting && canInteract)
@@ -78,74 +84,184 @@ public class InteractingSystem : MonoBehaviour
                 if(hit.collider.GetComponent<CoffeeMaker>() != null)
                 {
                     hit.collider.GetComponent<CoffeeMaker>().PressButton();
-
-                    //primero que pongas la taza y caiga el liquido, después ya recharge
-
                 }
+                /*else if (hit.collider.TryGetComponent(out TipoObjeto tocado))
+                {
+                    if(tocado.canBeUsedAlone)tocado.UseObject();
+                }*/ //esto para el click derecho
                 else
                 {
                     if (hit.collider.GetComponent<Mug>() != null)
                     {
                         mug = hit.collider.GetComponent<Mug>();
-                        if(coffeeMaker != null && coffeeMaker.mug == mug)
+                        if (coffeeMaker != null && coffeeMaker.mug == mug)
                         {
                             coffeeMaker.AdministrateMug(false, mug);
                         }
                         if (mug.isFull) isHoldingCoffee = true;
                         else isHoldingCoffee = false;
+
+                        heldObject = hit.collider.gameObject;
+                        heldObject.transform.SetParent(fpsCam.transform);
+                        heldObject.GetComponent<Collider>().enabled = false;
+                        if (heldObject.TryGetComponent(out Rigidbody rb))
+                        {
+                            rb.isKinematic = true;
+                            rb.useGravity = false;
+                        }
+                        heldObject.transform.position = holdingPoint.position;
                     }
-                    Debug.Log(hit.collider.name);
-                    heldObject = hit.collider.gameObject;
-                    heldObject.transform.SetParent(fpsCam.transform);
-                    heldObject.GetComponent<Collider>().enabled = false;
-                    if (heldObject.TryGetComponent(out Rigidbody rb))
+                    if (hit.collider.GetComponent<TipoObjeto>() != null)
                     {
-                        rb.isKinematic = true;
-                        rb.useGravity = false;
+                        if (hit.collider.GetComponent<TipoObjeto>().pickable)
+                        {
+
+                            heldObject = hit.collider.gameObject;
+                            heldObject.transform.SetParent(fpsCam.transform);
+                            heldObject.GetComponent<Collider>().enabled = false;
+                            if (heldObject.TryGetComponent(out Rigidbody rb))
+                            {
+                                rb.isKinematic = true;
+                                rb.useGravity = false;
+                            }
+                            heldObject.transform.position = holdingPoint.position;
+                        }
+                        else
+                        {
+
+                        }
                     }
-                    heldObject.transform.position = holdingPoint.position;
+                    
+                    
                 }
-                
+            }
+            if(Physics.Raycast(fpsCam.transform.position, direction, out hit, range, NPCLayer))
+            {
+                if (hit.collider.TryGetComponent(out NPCAIBase npc))
+                {
+                    Debug.Log("Trying to interact with NPC");
+                    npc.AskForFavour();
+                }
             }
         }
         else
         { 
             if (Physics.Raycast(fpsCam.transform.position, direction, out hit, range, impactLayer))
             {
-                //CartuchosImpresora
-                if (heldObject.TryGetComponent(out TipoObjeto equipado))
+                if (heldObject.TryGetComponent(out TipoObjeto equipado) && hit.transform.TryGetComponent(out TipoObjeto señalado))
                 {
-                    if(hit.transform.TryGetComponent(out TipoObjeto señalado))
+                    
+                    if (señalado.mainPart && equipado.objectType!= 8 && equipado.objectType == señalado.objectType) //recargar
                     {
-                        if (equipado.mainPart)
+                        if ((señalado.initialPoint != null && señalado.transform.position != señalado.initialPoint.position) || señalado.initialPoint == null)
                         {
-                            if (equipado.objectType == señalado.objectType && equipado.cartridgeColour == señalado.cartridgeColour)
+                            if (!señalado.gameObject.transform.GetChild(0).gameObject.activeSelf)
                             {
-                                if (!heldObject.transform.GetChild(0).gameObject.activeSelf)
-                                {
-                                    heldObject.transform.GetChild(0).gameObject.SetActive(true);
-                                    hit.collider.gameObject.SetActive(false);
-                                }
-                                else Debug.Log("Ya está lleno!");
+                                señalado.Replenish();
+                                heldObject.gameObject.SetActive(false);
+                                equipado.transform.position = equipado.initialPoint.position;//o poner coroutina para que tarde en salir de nuevo
+                                heldObject = null;
                             }
                         }
-                        else if(señalado.mainPart)
+                    }
+                    else if(equipado.objectType == 4 && equipado.mainPart && equipado.isFull)
+                    {
+                        RaycastHit[] hits;
+                        GameObject[] pages = new GameObject[3];
+                        int index = 0;
+                        if(señalado.objectType == 8 && !señalado.mainPart)
                         {
-                            if(señalado.transform.position != señalado.initialPoint.position)
+                            //sprite de grapa, coger objeto vacío
+                            Vector3 stapledPoint = new Vector3(hit.point.x, hit.point.y + 1, hit.point.z);
+                            hits = Physics.RaycastAll(stapledPoint, Vector3.down, 2, impactLayer);
+                            foreach (RaycastHit raycastHit in hits)
                             {
-                                if (!señalado.transform.GetChild(0).gameObject.activeSelf) //color del cartucho, no la caja
+                                if(raycastHit.collider.GetComponent<TipoObjeto>().objectType == 8)
                                 {
-                                    señalado.transform.GetChild(0).gameObject.SetActive(true);
-                                    heldObject.gameObject.SetActive(false);
-                                    heldObject = null;
+                                    pages[index] = raycastHit.collider.gameObject;
+                                    index++;
+                                    if(index >= 3)
+                                    {
+                                        break;
+                                    }
                                 }
                             }
-                            Debug.Log("Así no funciona! Intentalo al revés!");
+                            if (pages[1] != null)
+                            {
+                                pages[0].GetComponent<TipoObjeto>().activityDone = 0;
+                                pages[1].GetComponent<TipoObjeto>().activityDone = 0;
+                                pages[1].GetComponent<Rigidbody>().isKinematic = true;
+                                pages[1].GetComponent<Rigidbody>().useGravity = false;
+                                pages[1].GetComponent<Collider>().enabled = false;
+                                pages[1].transform.SetParent(pages[0].transform);
+                            }
+                            else if (pages[2] != null)
+                            {
+                                pages[2].GetComponent<Rigidbody>().isKinematic = true;
+                                pages[2].GetComponent<Rigidbody>().useGravity = false;
+                                pages[2].GetComponent<Collider>().enabled = false;
+                                pages[2].transform.SetParent(pages[0].transform);
+                            }
+                        }
+                    }
+                    else if (señalado.canBeUsedAlone) //solo para pulsar botones?? retocaresto
+                    {
+                        señalado.UseObject();
+                    }
+                    else if(equipado.objectType == 5 && señalado.TryGetComponent(out VisitorAI visitor))
+                    {
+                        equipado.enabled = false;
+                        Debug.Log("Acreditación dada!");
+                        //se marca como tarea completada en visitante
+                    }
+                    else if (equipado.objectType == 8 && !equipado.mainPart) //si llevas un folio
+                    {
+                        if(señalado.objectType == 6)
+                        {
+                            equipado.gameObject.SetActive(false);
+                            heldObject = null;
+                            Debug.Log("Hoja siendo triturada");
+                            npcAtFrontDesk.Receive(null, 3);
+                            //animación, subir numero de papeles dentro
+                        }
+                        else if(señalado.objectType == 7)
+                        {
+                            equipado.gameObject.SetActive(false);
+                            heldObject = null;
+                            Debug.Log("Hoja tirada a la basura"); //poner que si un folio acaba pq si en el collider de la papelera, sea strike directo y se convierta en basura
+                            //añadir bolas a la papelera y subir stats de full
+                            npcAtFrontDesk.Receive(null, 5);
+                        }
+                        else if(señalado.objectType == 8 && señalado.mainPart)
+                        {
+                            equipado.gameObject.SetActive(false);
+                            heldObject = null;
+                            Debug.Log("Hoja metida en casillero");
+                            npcAtFrontDesk.Receive(null, 4);
                         }
                         else LeaveItem();
                     }
+                    else if (equipado.objectType == -1 && !equipado.mainPart)//paquete de folios para impresora
+                    {
+                        if (señalado.objectType == -1) //repone folios en impresora
+                        {
+                            equipado.gameObject.SetActive(false);
+                            heldObject = null;
+                            señalado.Replenish();
+                        }
+                    }
+                    
+                    else LeaveItem();
                 }
                 else LeaveItem();
+            }
+            else if(Physics.Raycast(fpsCam.transform.position, direction, out hit, range, NPCLayer)) //testing
+            {
+                if(hit.transform.TryGetComponent(out NPCAIBase scriptNPC))
+                {
+                    scriptNPC.Receive(heldObject.GetComponent<TipoObjeto>(), -1);
+                    Debug.Log("el npc recibe algo");
+                }
             }
             else if (Physics.Raycast(fpsCam.transform.position, direction, out hit, range) && heldObject.TryGetComponent(out TipoObjeto sostenido))
             {
@@ -161,10 +277,8 @@ public class InteractingSystem : MonoBehaviour
                         heldObject.GetComponent<Collider>().enabled = true;
                         if(sostenido.initialPoint != null)
                         {
-                            
                             if (hit.transform.GetComponentInParent<CoffeeMaker>() != null)
                             {
-                                
                                 coffeeMaker = hit.transform.GetComponentInParent<CoffeeMaker>();
                                 if(!coffeeMaker.hasMug)
                                 {
@@ -176,8 +290,7 @@ public class InteractingSystem : MonoBehaviour
                                 else
                                 {
                                     Debug.Log("Ya hay una taza");
-                                }
-                                    
+                                }    
                             }
                             else
                             {
@@ -188,11 +301,8 @@ public class InteractingSystem : MonoBehaviour
                         heldObject.transform.parent = null;
                         heldObject = null; //se queda en posición donde estaba actualmente o no
                     }
-                    
                 }
-                
                 else LeaveItem();
-                
             }
             else
             {
@@ -232,16 +342,6 @@ public class InteractingSystem : MonoBehaviour
         
     }
 
-    /* poner solo si cafetera ha sido tocada por raycast
-    void ReloadCoffee()
-    {
-        if (bulletsLeft < ammoSize)
-        {
-            StartCoroutine(ReloadRoutine());
-        }
-    }
-    */
-
     IEnumerator ReloadRoutine()
     {
         Animator mugAnim = mug.gameObject.GetComponent<Animator>();
@@ -252,7 +352,7 @@ public class InteractingSystem : MonoBehaviour
         //Se llama a la animación de recarga
         //yield return new WaitForSeconds(reloadTime);
         scriptController.energy += 50;
-        Debug.Log("Se ha añadido energía");
+        //Debug.Log("Se ha añadido energía");
         if (scriptController.energy > 100) scriptController.energy = 100;
         reloadingCoffee = false;
         yield return null;
@@ -269,13 +369,16 @@ public class InteractingSystem : MonoBehaviour
         {
             if(isHoldingCoffee)
             {
-                
                 StartCoroutine(ReloadRoutine());
             }
             else
             {
+                if (heldObject.TryGetComponent(out TipoObjeto objectType))
+                {
+                    objectType.UseObject();
+                }
                 //No puedo hacer nada!
-                //si está con la grapadora, descontar grapas de un script aparte
+                //si está con la grapadora, descontar grapas de un script aparte-
             }
         }
     }

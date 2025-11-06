@@ -5,11 +5,14 @@ using UnityEngine;
 public class GameManager : ScriptableObject
 {
     public List<int> seats;
-    //public List<GameObject> workingNPC = new List<GameObject>(); //para que siempre haya algunos esperando y tmb sepan quien puede ir al sitio del otro para hablar
-    public int workingPeople;//número para saber cuantos trabajan de verdad actualmente
+    //public int workingPeople;//número para saber cuantos trabajan de verdad actualmente
     public int seatsFree;//número para saber cuantos trabajan de verdad actualmente
     public bool someoneInSecretary;//número para saber cuantos trabajan de verdad actualmente
     public int strikes; //quejas de ti al jefe, si hay 3 a la calle
+    public int tasksPoints; //para ganar??
+    //public NPCAIBase npcAI;
+    //public GameObject npcAtFrontDesk;
+
 
     //Resetear datos entre encendido/apagado
 
