@@ -53,11 +53,10 @@ public class NPCAIBase : MonoBehaviour
     [SerializeField] int activityToDo = -1;
     [SerializeField] int lastActivity = -1;
     [SerializeField] int favourAsked = -1; //0 Grapados, 1 papeles impresos, 2 Acreditaciones, 3 triturar, 4 clasificado, 5 papelera
-
+    int timesWorked;
     float stateUpdateTimer = 0f;
     float stateUpdateInterval = 0.5f;
     bool isBusy = false;
-    public GameObject go;
     public NPCAIBase npcScript;
     [SerializeField] InteractingSystem interactingSystem;
     //poner que tengan variables de hunger y que se vaya restando, así irán con tiempos regulados, tmb ciertos descansos/coffee breaks y hablar con otros hasta que estén de frente a ellos (raycasts)
@@ -65,25 +64,17 @@ public class NPCAIBase : MonoBehaviour
 
     private void Awake()
     {
-        go = this.GetComponent<GameObject>();
         agent = GetComponent<NavMeshAgent>();
         obstacle = GetComponent<NavMeshObstacle>();
         animator = GetComponent<Animator>();
         rb = GetComponent<Rigidbody>();
         lastPosition = transform.position;
         lastCheckTime = Time.time;
-        //gameManager.workingPeople = 0;
+        gameManager.workingPeople = 0;
         gameManager.someoneInSecretary = false;
         npcScript = GetComponent<NPCAIBase>();
-        gameManager.seatsFree = 6; //o los que haya
+        gameManager.seatsFree = 5; //o los que haya
         gameManager.strikes = 0;
-        gameManager.seats.Clear();
-        gameManager.seats.Add(0);
-        gameManager.seats.Add(1);
-        gameManager.seats.Add(2);
-        gameManager.seats.Add(3);
-        gameManager.seats.Add(4);
-        gameManager.seats.Add(5);
     }
     private void Start()
     {
@@ -138,9 +129,9 @@ public class NPCAIBase : MonoBehaviour
         {
             if (!goalSet)
             {
-                //if (gameManager.workingPeople < 5) Work();
-                //else ChooseActivity();
-                ChooseActivity();
+                if (gameManager.workingPeople < 2) Work();
+                else ChooseActivity();
+                
             }
             else if (goalSet && walkPointSet)
             {
@@ -151,12 +142,20 @@ public class NPCAIBase : MonoBehaviour
                         if ((Mathf.Abs(transform.position.z - destinations[4].position.z) < 0.5f)) StartCoroutine(TimeInLocationRoutine());
                     }
                 }
-                if(willSatAtWorkdesk)
+                else if(willSatAtWorkdesk)
                 {
                     if (Mathf.Abs(transform.position.x - destinations[0].position.x) < 0.5f)
                     {
                         if ((Mathf.Abs(transform.position.z - destinations[0].position.z) < 0.5f)) StartCoroutine(TimeInLocationRoutine());
                     }
+                }
+                else if(activityToDo == 1 && !willSatAtWorkdesk)
+                {
+                    if (Mathf.Abs(transform.position.x - seatsCafeteria[seatNumber].position.x) < 0.5f)
+                    {
+                        if ((Mathf.Abs(transform.position.z - seatsCafeteria[seatNumber].position.z) < 0.5f)) StartCoroutine(TimeInLocationRoutine());
+                    }
+                    Debug.Log(name + " is my name.Trying to take the seat " + seatNumber);
                 }
             }
         }
@@ -166,14 +165,28 @@ public class NPCAIBase : MonoBehaviour
     {
         int randomActivity = Random.Range(0, 101);
         goalSet = true;
+        if(lastActivity == 1 && !willSatAtWorkdesk)
+        {
+            gameManager.seatsFree++;
+        }
         
         if(!gameManager.someoneInSecretary) VisitSecretary();
         else
         {
-            if (randomActivity < 60) Work();//40
-            else if (randomActivity < 75) Eat();//15
-            else if (randomActivity < 90) Socialize();//15
-            else Sleep();
+            if (timesWorked >= 3 && gameManager.seatsFree >= 0)
+            {
+                timesWorked = 0;
+                willSatAtWorkdesk = false;
+                Eat();
+            }
+            else
+            {
+                willSatAtWorkdesk = true;
+                if (randomActivity < 60) Work();//40
+                else if (randomActivity < 75) Eat();//15
+                else if (randomActivity < 90) Socialize();//15
+                else Sleep();
+            }
         }
     }
     #region Different States
@@ -181,11 +194,12 @@ public class NPCAIBase : MonoBehaviour
     {
         activityToDo = 0;
         willSatAtWorkdesk = true;
+        timesWorked++;
         ResetActivityStatus();
         if (lastActivity == 0) walkPointSet = false;
         else
         {
-            //gameManager.workingPeople++;
+            gameManager.workingPeople++;
             walkPointSet = true;
             ReturnToSeat();
         }
@@ -195,15 +209,30 @@ public class NPCAIBase : MonoBehaviour
     void Eat()
     {
         activityToDo = 1;
-        willSatAtWorkdesk = true;
+        //willSatAtWorkdesk = true;
         ResetActivityStatus();
-        //gameManager.workingPeople--;
-        if (lastActivity != 0)
+        
+        if(willSatAtWorkdesk)
         {
-            ReturnToSeat();
+            if (lastActivity != 0)
+            {
+                gameManager.workingPeople++;
+                ReturnToSeat();
+            }
+        }
+        else
+        {
+            gameManager.workingPeople--;
+            animator.SetBool("isSitting", false);
+            goalSet = true;
+            walkPointSet = true;
+            //agent.SetDestination(destinations[activityToDo].position);
+            agent.SetDestination(seatsCafeteria[gameManager.seatsFree].position);
+            seatNumber = gameManager.seatsFree;
+            gameManager.seatsFree--;
         }
         //Animación de comer
-        StartCoroutine(ActivityDuration(2, 5));
+        StartCoroutine(ActivityDuration(7, 15));
     }
     void Socialize()
     {
@@ -242,7 +271,7 @@ public class NPCAIBase : MonoBehaviour
         goalSet = true;
         walkPointSet = true;
         ResetActivityStatus();
-        //if (lastActivity == 0) gameManager.workingPeople--;
+        if (lastActivity == 0) gameManager.workingPeople--;
         gameManager.someoneInSecretary = true;
         agent.SetDestination(destinations[activityToDo].position);
         interactingSystem.npcAtFrontDesk = this.gameObject.GetComponent<NPCAIBase>();
@@ -342,7 +371,7 @@ public class NPCAIBase : MonoBehaviour
         if ((walkPointSet && arrived)||!walkPointSet)
         {
             animator.SetBool("isWalking", false);
-            if(willSatAtWorkdesk) animator.SetBool("isSitting", true);
+            if(willSatAtWorkdesk || (!willSatAtWorkdesk && activityToDo == 1)) animator.SetBool("isSitting", true);
             agent.enabled = false;
             obstacle.enabled = true;
             //poner aquí animaciones de cada lugar??
@@ -355,6 +384,11 @@ public class NPCAIBase : MonoBehaviour
             {
                 transform.position = seatsCafeteria[seatNumber].position;
                 transform.rotation = seatsCafeteria[seatNumber].rotation;
+            }
+            else if (activityToDo == 4)
+            {
+                transform.position = destinations[activityToDo].position;
+                transform.rotation = destinations[activityToDo].rotation; //no del todo
             }
             //animator.SetBool("isSitting", true);
             rb.isKinematic = true;

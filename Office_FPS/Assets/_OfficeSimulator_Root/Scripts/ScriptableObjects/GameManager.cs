@@ -4,8 +4,8 @@ using UnityEngine;
 [CreateAssetMenu(fileName = "GameManager", menuName = "Scriptable Objects/GameManager")]
 public class GameManager : ScriptableObject
 {
-    public List<int> seats;
-    //public int workingPeople;//número para saber cuantos trabajan de verdad actualmente
+    //public Transform[] seats;
+    public int workingPeople;//número para saber cuantos trabajan de verdad actualmente
     public int seatsFree;//número para saber cuantos trabajan de verdad actualmente
     public bool someoneInSecretary;//número para saber cuantos trabajan de verdad actualmente
     public int strikes; //quejas de ti al jefe, si hay 3 a la calle
