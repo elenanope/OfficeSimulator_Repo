@@ -60,7 +60,7 @@ public class NPCAIBase : MonoBehaviour
     public NPCAIBase npcScript;
     [SerializeField] InteractingSystem interactingSystem;
     //poner que tengan variables de hunger y que se vaya restando, así irán con tiempos regulados, tmb ciertos descansos/coffee breaks y hablar con otros hasta que estén de frente a ellos (raycasts)
-
+    bool favourChosen = false;
 
     private void Awake()
     {
@@ -265,6 +265,7 @@ public class NPCAIBase : MonoBehaviour
     void VisitSecretary()
     {
         //no se pq inGame se pone a activityToDo = 1 cuando está delante de secretario
+        
         activityToDo = 4;
         willSatAtWorkdesk = false;
         animator.SetBool("isSitting", false);
@@ -288,7 +289,7 @@ public class NPCAIBase : MonoBehaviour
         if (activityToDo == 4)
         {
             Debug.Log("Se pregunta un favor");
-            bool favourChosen = false;
+            
             if (!favourChosen)
             {
                 favourChosen = true;
@@ -326,6 +327,7 @@ public class NPCAIBase : MonoBehaviour
                 if (favourAsked == handedObject.activityDone)
                 {
                     favourDone = true;
+                    favourChosen = false;
                     favourAsked = -1;
                     lastActivity = 4;
                     hasAsked = false;
@@ -333,6 +335,7 @@ public class NPCAIBase : MonoBehaviour
                     handedObject.gameObject.transform.parent = null;
                     if(handedObject.activityDone == 0)
                     {
+                        handedObject.gameObject.transform.GetChild(0).gameObject.SetActive(false);
                         handedObject.gameObject.transform.GetChild(0).parent = null; //si son folios grapados se separan
                     }
                     Debug.Log("Te han dado lo correcto");
@@ -340,6 +343,7 @@ public class NPCAIBase : MonoBehaviour
                 else
                 {
                     Debug.Log("Yo no he pedido esto");
+                    //quitar de que sea el hijo del player y poner strike? o quitar que sean hijos y volver a poner el transform.position como al spawnear
                 }
             }
             else

@@ -222,6 +222,7 @@ public class InteractingSystem : MonoBehaviour
                             heldObject = null;
                             Debug.Log("Hoja siendo triturada");
                             npcAtFrontDesk.Receive(null, 3);
+                            equipado = null;
                             //animación, subir numero de papeles dentro
                         }
                         else if(señalado.objectType == 7)
@@ -231,6 +232,7 @@ public class InteractingSystem : MonoBehaviour
                             Debug.Log("Hoja tirada a la basura"); //poner que si un folio acaba pq si en el collider de la papelera, sea strike directo y se convierta en basura
                             //añadir bolas a la papelera y subir stats de full
                             npcAtFrontDesk.Receive(null, 5);
+                            equipado = null;
                         }
                         else if(señalado.objectType == 8 && señalado.mainPart)
                         {
@@ -238,6 +240,7 @@ public class InteractingSystem : MonoBehaviour
                             heldObject = null;
                             Debug.Log("Hoja metida en casillero");
                             npcAtFrontDesk.Receive(null, 4);
+                            equipado = null;
                         }
                         else LeaveItem();
                     }
