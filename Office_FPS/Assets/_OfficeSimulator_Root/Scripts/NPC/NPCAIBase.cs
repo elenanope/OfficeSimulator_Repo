@@ -16,7 +16,7 @@ public class NPCAIBase : MonoBehaviour
     [SerializeField] bool walkPointSet;
     [SerializeField] bool goalSet;
     [SerializeField] bool arrived;
-    [SerializeField] bool readyToGo;
+    //[SerializeField] bool readyToGo;
 
     [Header("Interacting Stats")]
     [SerializeField] float timeLimit = 5f; //Tiempo entre ataque y ataque
@@ -44,7 +44,7 @@ public class NPCAIBase : MonoBehaviour
     Vector3 destination;
     [SerializeField]Transform[] seatsCafeteria;
     
-    bool willSatAtWorkdesk;
+    [SerializeField]bool willSatAtWorkdesk;
     public bool favourDone;//cuando se realice la tarea de la secretaría
     public bool hasAsked;//cuando se realice la tarea de la secretaría
     bool canAskYou;//cuando llegue a secretaría
@@ -73,7 +73,13 @@ public class NPCAIBase : MonoBehaviour
         gameManager.workingPeople = 0;
         gameManager.someoneInSecretary = false;
         npcScript = GetComponent<NPCAIBase>();
-        gameManager.seatsFree = 5; //o los que haya
+        gameManager.seatFree[0] = true;
+        gameManager.seatFree[1] = true;
+        gameManager.seatFree[2] = true;
+        gameManager.seatFree[3] = true;
+        gameManager.seatFree[4] = true;
+        gameManager.seatFree[5] = true;
+        //gameManager.seatFree = 5; //o los que haya
         gameManager.strikes = 0;
     }
     private void Start()
@@ -129,7 +135,7 @@ public class NPCAIBase : MonoBehaviour
         {
             if (!goalSet)
             {
-                if (gameManager.workingPeople < 2) Work();
+                if (gameManager.workingPeople < 5) Work();
                 else ChooseActivity();
                 
             }
@@ -163,21 +169,29 @@ public class NPCAIBase : MonoBehaviour
     }
     void ChooseActivity()
     {
+        bool seatsFree = false;
         int randomActivity = Random.Range(0, 101);
-        goalSet = true;
-        if(lastActivity == 1 && !willSatAtWorkdesk)
+        for (int i = 0; i < 6; i++)
         {
-            gameManager.seatsFree++;
+            if (gameManager.seatFree[i])
+            {
+                seatsFree = true;
+                break;
+            }
         }
+        goalSet = true;
         
         if(!gameManager.someoneInSecretary) VisitSecretary();
         else
         {
-            if (timesWorked >= 3 && gameManager.seatsFree >= 0)
+            if (timesWorked >= 3)
             {
-                timesWorked = 0;
-                willSatAtWorkdesk = false;
-                Eat();
+                if(seatsFree)
+                {
+                    timesWorked = 0;
+                    willSatAtWorkdesk = false;
+                    Eat();
+                }
             }
             else
             {
@@ -195,12 +209,13 @@ public class NPCAIBase : MonoBehaviour
         activityToDo = 0;
         willSatAtWorkdesk = true;
         timesWorked++;
-        ResetActivityStatus();
         if (lastActivity == 0) walkPointSet = false;
         else
         {
             gameManager.workingPeople++;
             walkPointSet = true;
+
+            ResetActivityStatus();
             ReturnToSeat();
         }
         goalSet = true;
@@ -210,26 +225,41 @@ public class NPCAIBase : MonoBehaviour
     {
         activityToDo = 1;
         //willSatAtWorkdesk = true;
-        ResetActivityStatus();
         
         if(willSatAtWorkdesk)
         {
             if (lastActivity != 0)
             {
                 gameManager.workingPeople++;
+                walkPointSet = true;
+                goalSet = true;
+
+                ResetActivityStatus();
                 ReturnToSeat();
             }
         }
         else
         {
-            gameManager.workingPeople--;
-            animator.SetBool("isSitting", false);
-            goalSet = true;
-            walkPointSet = true;
-            //agent.SetDestination(destinations[activityToDo].position);
-            agent.SetDestination(seatsCafeteria[gameManager.seatsFree].position);
-            seatNumber = gameManager.seatsFree;
-            gameManager.seatsFree--;
+            if(lastActivity != 1)
+            {
+                gameManager.workingPeople--;
+                animator.SetBool("isSitting", false);
+                goalSet = true;
+                walkPointSet = true;
+                //agent.SetDestination(destinations[activityToDo].position);
+                for (int i = 0; i < 6; i++)
+                {
+                    if (gameManager.seatFree[i] == true)
+                    {
+                        seatNumber = i;
+                        gameManager.seatFree[i] = false;
+                        break;
+                    }
+                }
+
+                ResetActivityStatus();
+                agent.SetDestination(seatsCafeteria[seatNumber].position);
+            }
         }
         //Animación de comer
         StartCoroutine(ActivityDuration(7, 15));
@@ -238,11 +268,12 @@ public class NPCAIBase : MonoBehaviour
     {
         activityToDo = 2;
         willSatAtWorkdesk = true;
-        ResetActivityStatus();
         //if (lastActivity == 0) gameManager.workingPeople--;
 
         if (lastActivity != 0)
         {
+            walkPointSet = true;
+            ResetActivityStatus();
             ReturnToSeat();
         }
         //Animación de llamar por teléfono
@@ -252,11 +283,12 @@ public class NPCAIBase : MonoBehaviour
     {
         activityToDo = 3;
         willSatAtWorkdesk = true;
-        ResetActivityStatus();
         //if (lastActivity == 0) gameManager.workingPeople--;
 
         if (lastActivity != 0)
         {
+            walkPointSet = true;
+            ResetActivityStatus();
             ReturnToSeat();
         }
         //Animación de dormir
@@ -282,7 +314,6 @@ public class NPCAIBase : MonoBehaviour
     //te manda a la ventana de secretaría y pides algo a través de otro script que gestiona el diálogo y los objetos de oficina que spawnees
     // los objetos se quedarán en secretaría, se encienden y apagan ahí (un npc te pide algo, se encienden objetos separados o de cierta manera predeterminada, se lo das
     // si es lo que quería, se vuelve a apagar, se resetea sus posiciones y el npc se va como si nada)
-
     #endregion
     public void AskForFavour()//Esto se llama al interactuar con el NPC
     {
@@ -370,55 +401,69 @@ public class NPCAIBase : MonoBehaviour
     }
     IEnumerator ActivityDuration(int min, int max)
     {
-        //if (isBusy) yield break;
-        //isBusy = true;
-        if ((walkPointSet && arrived)||!walkPointSet)
+        
+        if (isBusy) yield break;
+        isBusy = true;
+        if (activityToDo > -1)
         {
-            animator.SetBool("isWalking", false);
-            if(willSatAtWorkdesk || (!willSatAtWorkdesk && activityToDo == 1)) animator.SetBool("isSitting", true);
-            agent.enabled = false;
-            obstacle.enabled = true;
-            //poner aquí animaciones de cada lugar??
-            if (activityToDo == 0)
+            if (walkPointSet)
             {
-                transform.position = destinations[activityToDo].position;
-                transform.rotation = destinations[activityToDo].rotation; // no va bien
+                while (!arrived)
+                    yield return null;
             }
-            else if (activityToDo == 1 && !willSatAtWorkdesk)
+            if ((walkPointSet && arrived) || !walkPointSet)
             {
-                transform.position = seatsCafeteria[seatNumber].position;
-                transform.rotation = seatsCafeteria[seatNumber].rotation;
-            }
-            else if (activityToDo == 4)
-            {
-                transform.position = destinations[activityToDo].position;
-                transform.rotation = destinations[activityToDo].rotation; //no del todo
-            }
-            //animator.SetBool("isSitting", true);
-            rb.isKinematic = true;
+                animator.SetBool("isWalking", false);
+                if (willSatAtWorkdesk || (!willSatAtWorkdesk && activityToDo == 1)) animator.SetBool("isSitting", true);
+                agent.enabled = false;
+                obstacle.enabled = true;
+                //poner aquí animaciones de cada lugar??
+                if (activityToDo == 0)
+                {
+                    transform.position = destinations[activityToDo].position;
+                    transform.rotation = destinations[activityToDo].rotation; // no va bien
+                }
+                else if (activityToDo == 1 && !willSatAtWorkdesk)
+                {
+                    transform.position = seatsCafeteria[seatNumber].position;
+                    transform.rotation = seatsCafeteria[seatNumber].rotation;
+                }
+                else if (activityToDo == 4)
+                {
+                    transform.position = destinations[activityToDo].position;
+                    transform.rotation = destinations[activityToDo].rotation; //no del todo
+                }
+                else if (willSatAtWorkdesk)
+                {
+                    transform.position = destinations[0].position;
+                    transform.rotation = destinations[0].rotation; //no del todo
+                }
+                //animator.SetBool("isSitting", true);
+                rb.isKinematic = true;
 
-            float timeToSpend = Random.Range(min, max +1);
-            yield return new WaitForSeconds(timeToSpend);
+                float timeToSpend = Random.Range(min, max + 1);
+                yield return new WaitForSeconds(timeToSpend);
+                Debug.Log("Entramos en coroutina");
+                if (activityToDo == 4)
+                {
+                    gameManager.someoneInSecretary = false;
+                }
+                else if (activityToDo == 1 && !willSatAtWorkdesk)
+                {
+                    gameManager.seatFree[seatNumber] = true;
+                }
+                if (willSatAtWorkdesk) lastActivity = 0;
+                else lastActivity = activityToDo;
+                activityToDo = -1; //para que no se marque como que ha llegado de nuevo
+                goalSet = false;
+                walkPointSet = false;
+                arrived = false;
 
-            if (activityToDo == 4)
-            {
-                gameManager.someoneInSecretary = false;
+                isBusy = false;
+                yield break;
             }
-            if (willSatAtWorkdesk) lastActivity = 0;
-            else lastActivity = activityToDo;
-            goalSet = false;
-            arrived = false;
-            walkPointSet = false;
-
-            isBusy = false;
-            yield break;
         }
-        else
-        {
-            yield return new WaitForSeconds(Random.Range(1f, 2f));
-            //isBusy = false;
-            StartCoroutine(ActivityDuration(min, max)); //Va a crear problemas??
-        }
+        
     }
     void ResetActivityStatus()
     {
@@ -427,7 +472,7 @@ public class NPCAIBase : MonoBehaviour
             Debug.Log("Resetting Status");
             obstacle.enabled = false;
             agent.enabled = true;
-            rb.isKinematic = false;
+            //rb.isKinematic = false;
         }
     }
 

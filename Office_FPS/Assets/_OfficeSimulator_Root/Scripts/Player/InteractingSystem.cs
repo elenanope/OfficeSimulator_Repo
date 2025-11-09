@@ -126,13 +126,25 @@ public class InteractingSystem : MonoBehaviour
                             }
                             heldObject.transform.position = holdingPoint.position;
                         }
-                        else
+                        else if (hit.collider.TryGetComponent(out TipoObjeto señalado))
                         {
-
+                            if (señalado.objectOnTop != null)
+                            {
+                                heldObject = señalado.objectOnTop;
+                                heldObject.transform.SetParent(fpsCam.transform);
+                                heldObject.GetComponent<Collider>().enabled = false;
+                                if (heldObject.TryGetComponent(out Rigidbody rb))
+                                {
+                                    rb.isKinematic = true;
+                                    rb.useGravity = false;
+                                }
+                                heldObject.transform.position = holdingPoint.position;
+                                señalado.objectOnTop = null;
+                                Debug.Log("se coge el folio de la impresora");
+                            }
+                            else if (señalado.canBeUsedAlone) señalado.UseObject();
                         }
                     }
-                    
-                    
                 }
             }
             if(Physics.Raycast(fpsCam.transform.position, direction, out hit, range, NPCLayer))
@@ -157,52 +169,61 @@ public class InteractingSystem : MonoBehaviour
                         {
                             if (!señalado.gameObject.transform.GetChild(0).gameObject.activeSelf)
                             {
-                                señalado.Replenish();
-                                heldObject.gameObject.SetActive(false);
-                                equipado.transform.position = equipado.initialPoint.position;//o poner coroutina para que tarde en salir de nuevo
-                                heldObject = null;
+                                if(señalado.objectType >= 0 && señalado.objectType < 4)
+                                {
+                                    señalado.Replenish(equipado.objectType);
+                                    heldObject.gameObject.SetActive(false);
+                                    equipado.transform.position = equipado.initialPoint.position;//o poner coroutina para que tarde en salir de nuevo
+                                    heldObject = null;
+                                }
+                                
                             }
                         }
                     }
-                    else if(equipado.objectType == 4 && equipado.mainPart && equipado.isFull)
+                    else if(equipado.objectType == 4 && equipado.mainPart)
                     {
-                        RaycastHit[] hits;
-                        GameObject[] pages = new GameObject[3];
-                        int index = 0;
-                        if(señalado.objectType == 8 && !señalado.mainPart)
+                        if (equipado.isFull)
                         {
-                            //sprite de grapa, coger objeto vacío
-                            Vector3 stapledPoint = new Vector3(hit.point.x, hit.point.y + 1, hit.point.z);
-                            hits = Physics.RaycastAll(stapledPoint, Vector3.down, 2, impactLayer);
-                            foreach (RaycastHit raycastHit in hits)
+                            RaycastHit[] hits;
+                            GameObject[] pages = new GameObject[3];
+                            int index = 0;
+                            if (señalado.objectType == 8 && !señalado.mainPart)
                             {
-                                if(raycastHit.collider.GetComponent<TipoObjeto>().objectType == 8)
+                                //sprite de grapa, coger objeto vacío
+                                Vector3 stapledPoint = new Vector3(hit.point.x, hit.point.y + 1, hit.point.z);
+                                hits = Physics.RaycastAll(stapledPoint, Vector3.down, 2, impactLayer);
+                                foreach (RaycastHit raycastHit in hits)
                                 {
-                                    pages[index] = raycastHit.collider.gameObject;
-                                    index++;
-                                    if(index >= 3)
+                                    if (raycastHit.collider.GetComponent<TipoObjeto>().objectType == 8)
                                     {
-                                        break;
+                                        equipado.partsLeft--;
+                                        pages[index] = raycastHit.collider.gameObject;
+                                        index++;
+                                        if (index >= 3)
+                                        {
+                                            break;
+                                        }
                                     }
                                 }
-                            }
-                            if (pages[1] != null)
-                            {
-                                pages[0].GetComponent<TipoObjeto>().activityDone = 0;
-                                pages[1].GetComponent<TipoObjeto>().activityDone = 0;
-                                pages[1].GetComponent<Rigidbody>().isKinematic = true;
-                                pages[1].GetComponent<Rigidbody>().useGravity = false;
-                                pages[1].GetComponent<Collider>().enabled = false;
-                                pages[1].transform.SetParent(pages[0].transform);
-                            }
-                            else if (pages[2] != null)
-                            {
-                                pages[2].GetComponent<Rigidbody>().isKinematic = true;
-                                pages[2].GetComponent<Rigidbody>().useGravity = false;
-                                pages[2].GetComponent<Collider>().enabled = false;
-                                pages[2].transform.SetParent(pages[0].transform);
+                                if (pages[1] != null)
+                                {
+                                    pages[0].GetComponent<TipoObjeto>().activityDone = 0;
+                                    pages[1].GetComponent<TipoObjeto>().activityDone = 0;
+                                    pages[1].GetComponent<Rigidbody>().isKinematic = true;
+                                    pages[1].GetComponent<Rigidbody>().useGravity = false;
+                                    pages[1].GetComponent<Collider>().enabled = false;
+                                    pages[1].transform.SetParent(pages[0].transform);
+                                }
+                                else if (pages[2] != null)
+                                {
+                                    pages[2].GetComponent<Rigidbody>().isKinematic = true;
+                                    pages[2].GetComponent<Rigidbody>().useGravity = false;
+                                    pages[2].GetComponent<Collider>().enabled = false;
+                                    pages[2].transform.SetParent(pages[0].transform);
+                                }
                             }
                         }
+                        else Debug.Log("No te quedan grapas");
                     }
                     else if (señalado.canBeUsedAlone) //solo para pulsar botones?? retocaresto
                     {
@@ -242,17 +263,33 @@ public class InteractingSystem : MonoBehaviour
                             npcAtFrontDesk.Receive(null, 4);
                             equipado = null;
                         }
+                        else if (señalado.objectType == 10 && señalado.mainPart)
+                        {
+                            //se pone en la posición de fotocopiar
+                            señalado.objectOnTop = equipado.gameObject;
+                            heldObject.transform.position = señalado.initialPoint.position;
+                            heldObject.transform.parent = señalado.gameObject.transform;
+                            heldObject = null;
+                            equipado = null;
+                            Debug.Log("Folio se queda en impresora");
+                            //equipado.GetComponent<Collider>().enabled = false;
+
+                        }
                         else LeaveItem();
                     }
-                    else if (equipado.objectType == -1 && !equipado.mainPart)//paquete de folios para impresora
+                    else if (equipado.objectType == 10 && !equipado.mainPart)//paquete de folios para impresora
                     {
-                        if (señalado.objectType == -1) //repone folios en impresora
+                        if (señalado.objectType == 10 && señalado.mainPart)
                         {
                             equipado.gameObject.SetActive(false);
                             heldObject = null;
-                            señalado.Replenish();
+                            señalado.Replenish(equipado.objectType);
                         }
+
                     }
+                    
+                            
+                        
                     
                     else LeaveItem();
                 }

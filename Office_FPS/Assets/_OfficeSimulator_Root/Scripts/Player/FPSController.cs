@@ -34,6 +34,7 @@ public class FPSController : MonoBehaviour
     [SerializeField] GameManager gameManager;
     [SerializeField] Image energyBarFill;
     [SerializeField] GameObject blinkingPanel;
+    [SerializeField] Animator animBody;
     private void Awake()
     {
         playerRb = GetComponent<Rigidbody>();
@@ -101,8 +102,13 @@ public class FPSController : MonoBehaviour
         if(moveInput.x > 0 || moveInput.y > 0)
         {
             anim.SetBool("isWalking", true);
+            animBody.SetBool("isWalking", true);
         }
-        else anim.SetBool("isWalking", false);
+        else
+        {
+            anim.SetBool("isWalking", false);
+            animBody.SetBool("isWalking", false);
+        }
         //Aplicar la fuerza de movimiento
         playerRb.AddForce(velocityChange, ForceMode.VelocityChange);
     }
