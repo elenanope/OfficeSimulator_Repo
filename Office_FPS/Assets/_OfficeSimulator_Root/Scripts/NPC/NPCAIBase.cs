@@ -103,8 +103,8 @@ public class NPCAIBase : MonoBehaviour
             }
             if(patience <= 0)
             {
-                gameManager.strikes ++;
-                gameManager.points--;
+                gameManager.Score(false);
+                frontDesk.ShowNotification(false);
                 frontDesk.Dialogue(7);
                 StartCoroutine(TimeInLocationRoutine(2));
             }
@@ -348,28 +348,27 @@ public class NPCAIBase : MonoBehaviour
             {
                 if (favourAsked != 1 && favourAsked != 0 && favourAsked == handedObject.activityDone)
                 {
-                    gameManager.points++;
+                    gameManager.Score(true);
+                    frontDesk.ShowNotification(true);
                     frontDesk.Dialogue(5);
-                    Debug.Log("Te han dado lo correcto, caso 1");
                 }
                 else if (favourAsked == 1 && favourAsked == handedObject.activityDone && handedObject.activityDone == 1)
                 {
-                    gameManager.points++;
+                    gameManager.Score(true);
+                    frontDesk.ShowNotification(true);
                     frontDesk.Dialogue(5);
-                    Debug.Log("Te han dado lo correcto, caso 2");
                 }
                 else if (favourAsked == 0 && favourAsked == handedObject.activityDone && handedObject.activityDone == 0)
                 {
-                    gameManager.points++;
+                    gameManager.Score(true);
+                    frontDesk.ShowNotification(true);
                     frontDesk.Dialogue(5);
-                    Debug.Log("Te han dado lo correcto, caso 3");
                 }
                 else
                 {
-                    gameManager.strikes++;
-                    gameManager.points--;
+                    gameManager.Score(false);
+                    frontDesk.ShowNotification(false);
                     frontDesk.Dialogue(8);
-                    Debug.Log("Yo no he pedido esto");
                     //quitar de que sea el hijo del player y poner strike? o quitar que sean hijos y volver a poner el transform.position como al spawnear
                 }
                 StartCoroutine(TimeInLocationRoutine(1));
@@ -388,16 +387,15 @@ public class NPCAIBase : MonoBehaviour
                 {
                     if (taskDone == favourAsked)
                     {
-                        gameManager.points++;
+                        gameManager.Score(true);
+                        frontDesk.ShowNotification(true);
                         frontDesk.Dialogue(5);
-                        Debug.Log("Han hecho algo, y lo has recibido");
                     }
                     else
                     {
-                        gameManager.strikes++;
-                        gameManager.points--;
+                        gameManager.Score(false);
+                        frontDesk.ShowNotification(false);
                         frontDesk.Dialogue(8);
-                        Debug.Log("Han hecho algo, pero no coincide");
                     }
                     StartCoroutine(TimeInLocationRoutine(1));
                 }
@@ -493,6 +491,7 @@ public class NPCAIBase : MonoBehaviour
         if(caseNumber == 0)
         {
             arrived = true;
+            gameObject.transform.localRotation = destinations[activityToDo].rotation;
             if (activityToDo == 4)
             {
                 canAskYou = true;

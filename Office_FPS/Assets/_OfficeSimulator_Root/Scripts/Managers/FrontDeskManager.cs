@@ -35,12 +35,16 @@ public class FrontDeskManager : MonoBehaviour
     [SerializeField, TextArea(2, 4)] string[] dialogueLines;// 0 grapar, 1 fotocopiar, 2 acreditaciones, 3 deshacerte, 4 clasificar documentos, 5 Bienn gracias, 6 noo, pero va que tengo prisa
                                                             // 7 paciencia acabada: lo siento pero no has hecho muy buen trabajo, 8 yo no queria eso, adios, 9 mal, inadmisible (a la primera)
 
+    [SerializeField] GameObject pointsText;
+    [SerializeField] GameObject strikesText;
+
     private void Awake()
     {
         paper1.transform.position = spawnPoint1.position;
         paper2.transform.position = spawnPoint2.position;
         paper1.SetActive(false);
         paper2.SetActive(false);
+        didDialogueStart = false;
     }
     #region Office Tasks
     public void Printing()//solo llamar si hay folio encima
@@ -154,20 +158,41 @@ public class FrontDeskManager : MonoBehaviour
             dialogueText.text += ch;
             yield return new WaitForSecondsRealtime(typingTime);
         }
-
-        yield return new WaitForSecondsRealtime(2);
+        if(lineIndex <5 || lineIndex == 6) yield return new WaitForSecondsRealtime(2);
+        else yield return new WaitForSecondsRealtime(1);
         NextDialogueLine();
     }
 
     public void Dialogue(int lineToRead)
     {
         lineIndex = lineToRead;
-        if(!didDialogueStart)
+        if (lineIndex < 5 || lineIndex == 6)
         {
-            StopAllCoroutines();
+            if (!didDialogueStart)
+            {
+                StopAllCoroutines();
+                StartDialogue();
+            }
         }
-        StartDialogue();
+        else
+        {
+            if (!didDialogueStart)
+            {
+                StopAllCoroutines();
+            }
+
+            StartDialogue();
+        }
+            
     }
 
     #endregion
+    public IEnumerator ShowNotification(bool isPositive)
+    {
+        if(isPositive) pointsText.SetActive(true);
+        else strikesText.SetActive(true);
+        yield return new WaitForSeconds(2);
+        if (isPositive) pointsText.SetActive(false);
+        else strikesText.SetActive(false);
+    }
 }

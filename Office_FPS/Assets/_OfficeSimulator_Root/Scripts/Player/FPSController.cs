@@ -66,10 +66,11 @@ public class FPSController : MonoBehaviour
             Debug.Log("Win!!");
         }
         //Debug ray: visible only in Scene
-        Debug.DrawRay(camHolder.transform.position, camHolder.transform.forward * 100f, Color.red);
+        Debug.DrawRay(camHolder.transform.position, camHolder.transform.forward * 2f, Color.red);
         if(energy <=20 && energy > 10 && !isBlinking)
         {
             blinkingPanel.SetActive(true);
+            isBlinking = true;
             //StartCoroutine(Blinking(2));
         }
         else if(energy <=10 && !isBlinking)
@@ -77,7 +78,11 @@ public class FPSController : MonoBehaviour
             //StopCoroutine(Blinking(2));
             //StartCoroutine(Blinking(1));
         }
-        else if (isBlinking && energy > 20) blinkingPanel.SetActive(false);
+        else if (isBlinking && energy > 20)
+        {
+            isBlinking = true;
+            blinkingPanel.SetActive(false);
+        }
     }
 
     private void FixedUpdate()

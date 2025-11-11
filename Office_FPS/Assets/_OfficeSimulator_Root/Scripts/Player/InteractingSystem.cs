@@ -18,7 +18,7 @@ public class InteractingSystem : MonoBehaviour
     [Header("Interacting Parameters")]
     public GameObject heldObject = null;
     [SerializeField] Transform holdingPoint;
-    [SerializeField] float range = 4f;
+    [SerializeField] float range = 2f;
     [SerializeField] float interactingCooldown = 0.1f; //Tiempo entre disparos
     [SerializeField] float reloadTime = 1.5f; //Tiempo entre disparos
 
@@ -74,17 +74,12 @@ public class InteractingSystem : MonoBehaviour
         Vector3 direction = fpsCam.transform.forward;
         if (heldObject == null)
         {
-            //Physics.Raycast(Origen del rayo, dirección, almacén de info de impacto, longitud del rayo, layer a la que impacta (opcional)
             if (Physics.Raycast(fpsCam.transform.position, direction, out hit, range, impactLayer))
             {
                 if(hit.collider.GetComponent<CoffeeMaker>() != null)
                 {
                     hit.collider.GetComponent<CoffeeMaker>().PressButton();
                 }
-                /*else if (hit.collider.TryGetComponent(out TipoObjeto tocado))
-                {
-                    if(tocado.canBeUsedAlone)tocado.UseObject();
-                }*/ //esto para el click derecho
                 else
                 {
                     if (hit.collider.GetComponent<Mug>() != null)
@@ -121,6 +116,11 @@ public class InteractingSystem : MonoBehaviour
                                 rb.useGravity = false;
                             }
                             heldObject.transform.position = holdingPoint.position;
+                            if(heldObject.GetComponent<TipoObjeto>().objectType == 4 && heldObject.GetComponent<TipoObjeto>().mainPart)
+                            {
+                                heldObject.GetComponent<Animator>().SetBool("isHeld", true);
+                                heldObject.transform.localRotation = Quaternion.Euler(0, 48, 0);
+                            }
                         }
                         else if (hit.collider.TryGetComponent(out TipoObjeto señalado))
                         {
@@ -136,7 +136,6 @@ public class InteractingSystem : MonoBehaviour
                                 }
                                 heldObject.transform.position = holdingPoint.position;
                                 señalado.objectOnTop = null;
-                                Debug.Log("se coge el folio de la impresora");
                             }
                             else if (señalado.canBeUsedAlone) señalado.UseObject();
                         }
@@ -212,10 +211,10 @@ public class InteractingSystem : MonoBehaviour
                                 {
                                     pages[0].GetComponent<TipoObjeto>().activityDone = 0;
                                     pages[1].GetComponent<TipoObjeto>().activityDone = 0;
-                                    pages[1].GetComponent<Rigidbody>().isKinematic = true;
-                                    pages[1].GetComponent<Rigidbody>().useGravity = false;
-                                    pages[1].GetComponent<Collider>().enabled = false;
-                                    pages[1].transform.SetParent(pages[0].transform);
+                                    pages[0].GetComponent<Rigidbody>().isKinematic = true;
+                                    pages[0].GetComponent<Rigidbody>().useGravity = false;
+                                    pages[0].GetComponent<Collider>().enabled = false;
+                                    pages[0].transform.SetParent(pages[1].transform);
                                 }
                                 else if (pages[2] != null)
                                 {
@@ -235,7 +234,6 @@ public class InteractingSystem : MonoBehaviour
                     else if(equipado.objectType == 5 && señalado.TryGetComponent(out VisitorAI visitor))
                     {
                         equipado.enabled = false;
-                        Debug.Log("Acreditación dada!");
                         //se marca como tarea completada en visitante
                     }
                     else if (equipado.objectType == 8 && !equipado.mainPart) //si llevas un folio
@@ -244,20 +242,17 @@ public class InteractingSystem : MonoBehaviour
                         {
                             equipado.gameObject.SetActive(false);
                             heldObject = null;
-                            Debug.Log("Hoja siendo triturada");
                             if (equipado.paperType > 1)
                             {
                                 if (npcAtFrontDesk != null) npcAtFrontDesk.Receive(null, 3);
                                 else if (bossAtFrontDesk != null) bossAtFrontDesk.Receive(null, 3);
                                 else if (visitorAtFrontDesk != null) visitorAtFrontDesk.Receive(null, 3);
-                                Debug.Log("Bien!");
                             }
                             else
                             {
                                 if (npcAtFrontDesk != null) npcAtFrontDesk.Receive(null, 5);
                                 else if (bossAtFrontDesk != null) bossAtFrontDesk.Receive(null, 5);
                                 else if (visitorAtFrontDesk != null) visitorAtFrontDesk.Receive(null, 5);
-                                Debug.Log("Mal!");
                             }
                                 equipado = null;
                             //animación, subir numero de papeles dentro
@@ -266,21 +261,17 @@ public class InteractingSystem : MonoBehaviour
                         {
                             equipado.gameObject.SetActive(false);
                             heldObject = null;
-                            Debug.Log("Hoja tirada a la basura"); //poner que si un folio acaba pq si en el collider de la papelera, sea strike directo y se convierta en basura
-                            //añadir bolas a la papelera y subir stats de full
                             if (equipado.paperType < 2)
                             {
                                 if (npcAtFrontDesk != null) npcAtFrontDesk.Receive(null, 3);
                                 else if (bossAtFrontDesk != null) bossAtFrontDesk.Receive(null, 3);
                                 else if (visitorAtFrontDesk != null) visitorAtFrontDesk.Receive(null, 3);
-                                Debug.Log("Bien!");
                             }
                             else
                             {
                                 if (npcAtFrontDesk != null) npcAtFrontDesk.Receive(null, 5);
                                 else if (bossAtFrontDesk != null) bossAtFrontDesk.Receive(null, 5);
                                 else if (visitorAtFrontDesk != null) visitorAtFrontDesk.Receive(null, 5);
-                                Debug.Log("Mal!");
                             }
                             equipado = null;
                         }
@@ -288,20 +279,17 @@ public class InteractingSystem : MonoBehaviour
                         {
                             equipado.gameObject.SetActive(false);
                             heldObject = null;
-                            Debug.Log("Hoja metida en casillero");
                             if((equipado.paperType < 2 && señalado.paperType == 0)||(equipado.paperType > 1 && equipado.paperType < 4 && señalado.paperType == 2) || equipado.paperType == señalado.paperType)
                             {
                                 if (npcAtFrontDesk != null) npcAtFrontDesk.Receive(null, 4);
                                 else if (bossAtFrontDesk != null) bossAtFrontDesk.Receive(null, 4);
                                 else if (visitorAtFrontDesk != null) visitorAtFrontDesk.Receive(null, 4);
-                                Debug.Log("Bien!");
                             }
                             else
                             {
                                 if (npcAtFrontDesk != null) npcAtFrontDesk.Receive(null, 5);
                                 else if (bossAtFrontDesk != null) bossAtFrontDesk.Receive(null, 5);
                                 else if (visitorAtFrontDesk != null) visitorAtFrontDesk.Receive(null, 5);
-                                Debug.Log("Mal!");
                             }
                             equipado = null;
                         }
@@ -316,7 +304,6 @@ public class InteractingSystem : MonoBehaviour
                             equipado.GetComponent<Collider>().enabled = true;
                             heldObject = null;
                             equipado = null;
-                            Debug.Log("Folio se queda en impresora");
 
                         }
                         else LeaveItem();
@@ -394,10 +381,6 @@ public class InteractingSystem : MonoBehaviour
             {
                 LeaveItem();
             }
-            
-            //poner UI cuando hoverees sobre botones interactuables, donde puedes devolver tu objeto o abrir algo
-            //UI semipermanente -> cuando tengas un heldObject se activará el texto del botón con el que puedes droppear el objeto
-
         }
         interacting = false;
 
@@ -409,6 +392,10 @@ public class InteractingSystem : MonoBehaviour
         leaving = false;
         if (Physics.Raycast(fpsCam.transform.position, direction, out hit, range))
         {
+            if (heldObject.GetComponent<TipoObjeto>().objectType == 4 && heldObject.GetComponent<TipoObjeto>().mainPart)
+            {
+                heldObject.GetComponent<Animator>().SetBool("isHeld", false);
+            }
             if (mug != null) mug = null;
             //Debug.Log(hit.collider.name);
             Vector3 dropPosition = hit.point + hit.normal * 0.1f;

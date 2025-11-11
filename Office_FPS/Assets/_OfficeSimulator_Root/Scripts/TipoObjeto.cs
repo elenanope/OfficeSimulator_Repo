@@ -104,6 +104,9 @@ public class TipoObjeto : MonoBehaviour
                 }
                 else if (objectType == 15 && !mainPart)
                 {
+                    Time.timeScale = 0f;
+                    Cursor.lockState = CursorLockMode.Confined;
+                    Cursor.visible = true;
                     SceneManager.LoadScene(0);
                 }
                 //Hacer lo que haga el botón

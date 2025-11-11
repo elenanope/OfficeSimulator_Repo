@@ -36,5 +36,17 @@ public class GameManager : ScriptableObject
         Cursor.lockState = CursorLockMode.Confined;
         Cursor.visible = true;
     }
+    public void Score(bool isPositive)
+    {
+        if(isPositive)
+        {
+            points++;
+        }
+        else
+        {
+            points--;
+            strikes++;
+        }
+    }
 
 }

@@ -101,8 +101,8 @@ public class BossAI : MonoBehaviour
             }
             if (patience <= 0)
             {
-                gameManager.strikes ++;
-                gameManager.points--;
+                gameManager.Score(false);
+                frontDesk.ShowNotification(false);
                 frontDesk.Dialogue(7);
                 StartCoroutine(TimeInLocationRoutine(2));
             }
@@ -286,27 +286,26 @@ public class BossAI : MonoBehaviour
             {
                 if (favourAsked != 1 && favourAsked != 0 && favourAsked == handedObject.activityDone)
                 {
-                    gameManager.points++;
-                    Debug.Log("Te han dado lo correcto, caso 1");
+                    gameManager.Score(true);
+                    frontDesk.ShowNotification(true);
                     frontDesk.Dialogue(5);
                 }
                 else if (favourAsked == 1 && favourAsked == handedObject.activityDone && handedObject.activityDone == 1)
                 {
-                    gameManager.points++;
-                    Debug.Log("Te han dado lo correcto, caso 2");
+                    gameManager.Score(true);
+                    frontDesk.ShowNotification(true);
                     frontDesk.Dialogue(5);
                 }
                 else if (favourAsked == 0 && favourAsked == handedObject.activityDone && handedObject.activityDone == 0)
                 {
-                    gameManager.points++;
-                    Debug.Log("Te han dado lo correcto, caso 3");
+                    gameManager.Score(true);
+                    frontDesk.ShowNotification(true);
                     frontDesk.Dialogue(5);
                 }
                 else
                 {
-                    gameManager.strikes++;
-                    gameManager.points--;
-                    Debug.Log("Yo no he pedido esto");
+                    gameManager.Score(false);
+                    frontDesk.ShowNotification(false);
                     frontDesk.Dialogue(9);
                     //quitar de que sea el hijo del player y poner strike? o quitar que sean hijos y volver a poner el transform.position como al spawnear
                 }
@@ -331,15 +330,14 @@ public class BossAI : MonoBehaviour
                 {
                     if (taskDone == favourAsked)
                     {
-                        gameManager.points++;
-                        Debug.Log("Han hecho algo, y lo has recibido");
+                        gameManager.Score(true);
+                        frontDesk.ShowNotification(true);
                         frontDesk.Dialogue(5);
                     }
                     else
                     {
-                        gameManager.strikes++;
-                        gameManager.points--;
-                        Debug.Log("Han hecho algo, pero no coincide");
+                        gameManager.Score(false);
+                        frontDesk.ShowNotification(false);
                         frontDesk.Dialogue(9);
                     }
                     StartCoroutine(TimeInLocationRoutine(1));
@@ -430,6 +428,7 @@ public class BossAI : MonoBehaviour
         if(caseNumber == 0)
         {
             arrived = true;
+            gameObject.transform.localRotation = destinations[activityToDo].rotation;
             if (activityToDo == 4)
             {
                 canAskYou = true;

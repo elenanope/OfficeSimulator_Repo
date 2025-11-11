@@ -87,8 +87,8 @@ public class VisitorAI : MonoBehaviour
 
             if (patience <= 0)
             {
-                gameManager.strikes ++;
-                gameManager.points--;
+                gameManager.Score(false);
+                frontDeskManager.ShowNotification(false);
                 //animacion sad
                 cardState = 3;
                 meetingState = 3;
@@ -254,17 +254,22 @@ public class VisitorAI : MonoBehaviour
                 cardState = 0;
                 animator.SetBool("isWalking", false);
                 canAskYou = true;
+                gameObject.transform.localRotation = frontDesk.rotation;
             }
             else if (cardState == 2 && meetingState == 0)
             {
                 meetingState = 1;
                 animator.SetBool("isSitting", true);
                 boss.HeadBackToOffice();
+                gameObject.transform.localRotation = bossOffice.rotation;
                 StartCoroutine(WaitInOffice());
                 yield break;
             }
             else if (cardState == 2 && meetingState == 3) //comprobar que hace esto!!!
             {
+
+                gameObject.transform.localRotation = frontDesk.rotation;
+                yield return new WaitForSeconds(0.1f);
                 frontDeskManager.visitorCard.SetActive(true);
                 frontDeskManager.visitorCard.GetComponent<Collider>().enabled = true;
                 frontDeskManager.visitorCard.GetComponent<Rigidbody>().useGravity = true;
