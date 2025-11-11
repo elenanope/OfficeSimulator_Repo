@@ -8,10 +8,10 @@ public class Mug : MonoBehaviour
     //[SerializeField] MeshRenderer
     private void Update()
     {
-        if (isFull) gameObject.GetComponent<MeshRenderer>().material = emptyMat;
-        else
+        //if (isFull) gameObject.GetComponent<MeshRenderer>().material = emptyMat;
+        //else
         {
-            gameObject.GetComponent<MeshRenderer>().material = normalMat;
+            //gameObject.GetComponent<MeshRenderer>().material = normalMat;
         }
     }
 }

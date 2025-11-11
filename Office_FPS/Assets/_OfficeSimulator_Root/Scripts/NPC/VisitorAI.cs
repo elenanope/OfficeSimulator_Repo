@@ -23,6 +23,7 @@ public class VisitorAI : MonoBehaviour
     [SerializeField] bool arrived;
     [SerializeField] bool started;
     [SerializeField] bool hasAsked;
+    [SerializeField] bool turnOff;
 
     bool canAskYou;//cuando llegue a secretaría
     float timePassed = -10;
@@ -57,6 +58,14 @@ public class VisitorAI : MonoBehaviour
         timePassed += Time.deltaTime;
         if (timePassed >= 5)
         {
+            if(turnOff)//esto después lo puedo actualizar, por ahora solo va a secretaría una vez
+            {
+                timeUntilNewAsk -= 10;
+                if (timeUntilNewAsk <= 0 && started)
+                {
+                    gameObject.SetActive(false);
+                }
+            }
             timePassed = 0;
             if((cardState == -1 ||meetingState==3) && !started)
             {
@@ -74,6 +83,8 @@ public class VisitorAI : MonoBehaviour
             {
                 ChooseActivity();
             }
+            
+
             if (patience <= 0)
             {
                 gameManager.strikes ++;
@@ -172,11 +183,13 @@ public class VisitorAI : MonoBehaviour
                 frontDeskManager.visitorCard.GetComponent<Rigidbody>().useGravity = true;
                 frontDeskManager.visitorCard.GetComponent<Rigidbody>().isKinematic = false;
                 gameManager.someoneInSecretary = false;
+                gameManager.visitorInQueue = false;
                 frontDeskManager.visitorCard.transform.position = frontDeskManager.spawnPoint1.position;
                 agent.SetDestination(initialPos.position);
                 cardState = -1;
                 meetingState = 0;
-                timeUntilNewAsk = 90;
+                timeUntilNewAsk = 10;
+                turnOff = true;
             }
             //Enseñar diálogo con petición
         }
@@ -221,6 +234,7 @@ public class VisitorAI : MonoBehaviour
         isBusy = true;
         yield return new WaitForSeconds(Random.Range(15, 25));
         meetingState = 3;
+        arrived = false;
         isBusy =false;
     }
     void ResetActivityStatus()
@@ -238,6 +252,7 @@ public class VisitorAI : MonoBehaviour
             if (cardState == -1)
             {
                 cardState = 0;
+                animator.SetBool("isWalking", false);
                 canAskYou = true;
             }
             else if (cardState == 2 && meetingState == 0)
@@ -250,12 +265,19 @@ public class VisitorAI : MonoBehaviour
             }
             else if (cardState == 2 && meetingState == 3) //comprobar que hace esto!!!
             {
-                //soltar acreditacion en punto
                 frontDeskManager.visitorCard.SetActive(true);
+                frontDeskManager.visitorCard.GetComponent<Collider>().enabled = true;
+                frontDeskManager.visitorCard.GetComponent<Rigidbody>().useGravity = true;
+                frontDeskManager.visitorCard.GetComponent<Rigidbody>().isKinematic = false;
+                gameManager.someoneInSecretary = false;
+                gameManager.visitorInQueue = false;
                 frontDeskManager.visitorCard.transform.position = frontDeskManager.spawnPoint1.position;
                 agent.SetDestination(initialPos.position);
                 cardState = -1;
                 meetingState = 0;
+                timeUntilNewAsk = 10;
+                turnOff = true;
+                //soltar acreditacion en punto
             }
             yield break;
         }
