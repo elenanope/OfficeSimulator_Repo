@@ -1,4 +1,5 @@
 using System.Collections;
+using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -15,7 +16,7 @@ public class InteractingSystem : MonoBehaviour
     
 
     [Header("Interacting Parameters")]
-    [SerializeField] GameObject heldObject = null;
+    public GameObject heldObject = null;
     [SerializeField] Transform holdingPoint;
     [SerializeField] float range = 4f;
     [SerializeField] float interactingCooldown = 0.1f; //Tiempo entre disparos
@@ -35,6 +36,8 @@ public class InteractingSystem : MonoBehaviour
     int taskDone = -1;
     Mug mug;
     public NPCAIBase npcAtFrontDesk = null;
+    public BossAI bossAtFrontDesk = null;
+    public VisitorAI visitorAtFrontDesk = null;
 
     #endregion
 
@@ -42,12 +45,6 @@ public class InteractingSystem : MonoBehaviour
     {
         scriptController = GetComponent<FPSController>();
         canInteract = true;
-    }
-
-    void Start()
-    {
-        //impactEffect.SetActive(false); //Apaga el efecto de impacto al iniciar el juego
-
     }
 
     void Update()
@@ -59,7 +56,6 @@ public class InteractingSystem : MonoBehaviour
             {
                 //Inicializar la corrutina de disparo
                 StartCoroutine(InteractRoutine());
-                Debug.Log("Interacting try");
             }
         }
     }
@@ -151,8 +147,15 @@ public class InteractingSystem : MonoBehaviour
             {
                 if (hit.collider.TryGetComponent(out NPCAIBase npc))
                 {
-                    Debug.Log("Trying to interact with NPC");
                     npc.AskForFavour();
+                }
+                else if (hit.collider.TryGetComponent(out BossAI boss))
+                {
+                    boss.AskForFavour();
+                }
+                else if (hit.collider.TryGetComponent(out VisitorAI visitor))
+                {
+                    visitor.AskForCard();
                 }
             }
         }
@@ -242,8 +245,21 @@ public class InteractingSystem : MonoBehaviour
                             equipado.gameObject.SetActive(false);
                             heldObject = null;
                             Debug.Log("Hoja siendo triturada");
-                            npcAtFrontDesk.Receive(null, 3);
-                            equipado = null;
+                            if (equipado.paperType > 1)
+                            {
+                                if (npcAtFrontDesk != null) npcAtFrontDesk.Receive(null, 3);
+                                else if (bossAtFrontDesk != null) bossAtFrontDesk.Receive(null, 3);
+                                else if (visitorAtFrontDesk != null) visitorAtFrontDesk.Receive(null, 3);
+                                Debug.Log("Bien!");
+                            }
+                            else
+                            {
+                                if (npcAtFrontDesk != null) npcAtFrontDesk.Receive(null, 5);
+                                else if (bossAtFrontDesk != null) bossAtFrontDesk.Receive(null, 5);
+                                else if (visitorAtFrontDesk != null) visitorAtFrontDesk.Receive(null, 5);
+                                Debug.Log("Mal!");
+                            }
+                                equipado = null;
                             //animación, subir numero de papeles dentro
                         }
                         else if(señalado.objectType == 7)
@@ -252,7 +268,20 @@ public class InteractingSystem : MonoBehaviour
                             heldObject = null;
                             Debug.Log("Hoja tirada a la basura"); //poner que si un folio acaba pq si en el collider de la papelera, sea strike directo y se convierta en basura
                             //añadir bolas a la papelera y subir stats de full
-                            npcAtFrontDesk.Receive(null, 5);
+                            if (equipado.paperType < 2)
+                            {
+                                if (npcAtFrontDesk != null) npcAtFrontDesk.Receive(null, 3);
+                                else if (bossAtFrontDesk != null) bossAtFrontDesk.Receive(null, 3);
+                                else if (visitorAtFrontDesk != null) visitorAtFrontDesk.Receive(null, 3);
+                                Debug.Log("Bien!");
+                            }
+                            else
+                            {
+                                if (npcAtFrontDesk != null) npcAtFrontDesk.Receive(null, 5);
+                                else if (bossAtFrontDesk != null) bossAtFrontDesk.Receive(null, 5);
+                                else if (visitorAtFrontDesk != null) visitorAtFrontDesk.Receive(null, 5);
+                                Debug.Log("Mal!");
+                            }
                             equipado = null;
                         }
                         else if(señalado.objectType == 8 && señalado.mainPart)
@@ -260,19 +289,34 @@ public class InteractingSystem : MonoBehaviour
                             equipado.gameObject.SetActive(false);
                             heldObject = null;
                             Debug.Log("Hoja metida en casillero");
-                            npcAtFrontDesk.Receive(null, 4);
+                            if((equipado.paperType < 2 && señalado.paperType == 0)||(equipado.paperType > 1 && equipado.paperType < 4 && señalado.paperType == 2) || equipado.paperType == señalado.paperType)
+                            {
+                                if (npcAtFrontDesk != null) npcAtFrontDesk.Receive(null, 4);
+                                else if (bossAtFrontDesk != null) bossAtFrontDesk.Receive(null, 4);
+                                else if (visitorAtFrontDesk != null) visitorAtFrontDesk.Receive(null, 4);
+                                Debug.Log("Bien!");
+                            }
+                            else
+                            {
+                                if (npcAtFrontDesk != null) npcAtFrontDesk.Receive(null, 5);
+                                else if (bossAtFrontDesk != null) bossAtFrontDesk.Receive(null, 5);
+                                else if (visitorAtFrontDesk != null) visitorAtFrontDesk.Receive(null, 5);
+                                Debug.Log("Mal!");
+                            }
                             equipado = null;
                         }
                         else if (señalado.objectType == 10 && señalado.mainPart)
                         {
                             //se pone en la posición de fotocopiar
                             señalado.objectOnTop = equipado.gameObject;
+                            equipado.activityDone = 1;
                             heldObject.transform.position = señalado.initialPoint.position;
+                            heldObject.transform.rotation = señalado.initialPoint.rotation;
                             heldObject.transform.parent = señalado.gameObject.transform;
+                            equipado.GetComponent<Collider>().enabled = true;
                             heldObject = null;
                             equipado = null;
                             Debug.Log("Folio se queda en impresora");
-                            //equipado.GetComponent<Collider>().enabled = false;
 
                         }
                         else LeaveItem();
@@ -285,12 +329,7 @@ public class InteractingSystem : MonoBehaviour
                             heldObject = null;
                             señalado.Replenish(equipado.objectType);
                         }
-
                     }
-                    
-                            
-                        
-                    
                     else LeaveItem();
                 }
                 else LeaveItem();
@@ -300,7 +339,14 @@ public class InteractingSystem : MonoBehaviour
                 if(hit.transform.TryGetComponent(out NPCAIBase scriptNPC))
                 {
                     scriptNPC.Receive(heldObject.GetComponent<TipoObjeto>(), -1);
-                    Debug.Log("el npc recibe algo");
+                }
+                else if(hit.transform.TryGetComponent(out VisitorAI visitorAI))
+                {
+                    visitorAI.Receive(heldObject.GetComponent<TipoObjeto>(), -1);
+                }
+                else if(hit.transform.TryGetComponent(out BossAI bossAI))
+                {
+                    bossAI.Receive(heldObject.GetComponent<TipoObjeto>(), -1);
                 }
             }
             else if (Physics.Raycast(fpsCam.transform.position, direction, out hit, range) && heldObject.TryGetComponent(out TipoObjeto sostenido))

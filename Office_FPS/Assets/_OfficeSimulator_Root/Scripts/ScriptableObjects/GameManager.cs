@@ -8,8 +8,12 @@ public class GameManager : ScriptableObject
     public int workingPeople;//número para saber cuantos trabajan de verdad actualmente
     public bool[] seatFree;//número para saber cuantos trabajan de verdad actualmente
     public bool someoneInSecretary;//número para saber cuantos trabajan de verdad actualmente
+    public bool bossInQueue;//número para saber cuantos trabajan de verdad actualmente
+    public bool visitorInQueue;//número para saber cuantos trabajan de verdad actualmente
     public int strikes; //quejas de ti al jefe, si hay 3 a la calle
+    public int points; //quejas de ti al jefe, si hay 3 a la calle
     public int tasksPoints; //para ganar??
+    public GameObject cinematic;
     //public NPCAIBase npcAI;
     //public GameObject npcAtFrontDesk;
 
@@ -20,7 +24,17 @@ public class GameManager : ScriptableObject
     //si uno se queda mucho tiempo quieto y no está arrived o a X metros de su meta, si no encuentro mejor manera de solucionarlo:
     //->hacer que se abra un portal, desaparezca hacia abajo y caiga sentado en su puesto de trabajo
     //si eran más de uno, hacerlo en uno y si los otros siguen congelados, hacerlo otra vez y etc.
-
-
+    public void StartGame()
+    {
+        Time.timeScale = 1f;
+        Cursor.lockState = CursorLockMode.Locked;
+        Cursor.visible = false;
+    }
+    public void EndGame()
+    {
+        Time.timeScale = 0f;
+        Cursor.lockState = CursorLockMode.Confined;
+        Cursor.visible = true;
+    }
 
 }

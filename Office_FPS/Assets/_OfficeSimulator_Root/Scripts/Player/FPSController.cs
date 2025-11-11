@@ -46,8 +46,8 @@ public class FPSController : MonoBehaviour
     void Start()
     {
         //Lock cursor
-        Cursor.lockState = CursorLockMode.Locked;
-        Cursor.visible = false;
+        //Cursor.lockState = CursorLockMode.Locked;
+        //Cursor.visible = false;
     }
 
     // Update is called once per frame
@@ -60,6 +60,10 @@ public class FPSController : MonoBehaviour
             //Método de perder
             //Animación de blinking y se escucha un golpe en el suelo (thump)
             Debug.Log("Game over!!");
+        }
+        else if (gameManager.points > 10)
+        {
+            Debug.Log("Win!!");
         }
         //Debug ray: visible only in Scene
         Debug.DrawRay(camHolder.transform.position, camHolder.transform.forward * 100f, Color.red);

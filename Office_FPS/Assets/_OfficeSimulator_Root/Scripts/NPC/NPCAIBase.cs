@@ -5,29 +5,38 @@ using UnityEngine.AI;
 
 public class NPCAIBase : MonoBehaviour
 {
-    #region General Variables
+    #region Variables
     [Header("AI Configuration")]
     [SerializeField] NavMeshAgent agent; //Ref al componente "cerebro" del agente
     [SerializeField] NavMeshObstacle obstacle; //Ref al componente "cerebro" del agente
-    [SerializeField] int patience = 100;
-    [SerializeField] int maxPatience = 100;
+    [SerializeField] int patience = 60;
+    [SerializeField] int maxPatience = 60;
     
     [Header("Patroling Stats")]
     [SerializeField] bool walkPointSet;
     [SerializeField] bool goalSet;
     [SerializeField] bool arrived;
-    //[SerializeField] bool readyToGo;
-
-    [Header("Interacting Stats")]
-    [SerializeField] float timeLimit = 5f; //Tiempo entre ataque y ataque
-    [SerializeField] GameObject heldObject; //Ref al prefab del proyectil
-    [SerializeField] Transform holdPoint; //Ref a la posición desde la que se dispara
-    
 
     [Header("States & Detection")]
-    [SerializeField] int actualState= 0; //0 working, 1 eating, 2 going out, 3secretary ask
+    [SerializeField] bool willSatAtWorkdesk;
     [SerializeField] Transform[] destinations;
+    [SerializeField] Transform[] seatsCafeteria;
     [SerializeField] LayerMask npcLayer;
+    [SerializeField] GameObject[] objectsToUse;//sushi para comer, etc.
+    public bool favourDone;//cuando se realice la tarea de la secretaría
+    public bool hasAsked;//cuando se realice la tarea de la secretaría
+    bool canAskYou;//cuando llegue a secretaría
+    bool favourChosen = false;
+    int seatNumber;
+    float timePassed = -10;
+    [SerializeField] int activityToDo = -1;
+    [SerializeField] int lastActivity = -1;
+    [SerializeField] int favourAsked = -1; //0 Grapados, 1 papeles impresos, 2 Acreditaciones, 3 triturar/papelera, 4 clasificado,// 5 papelera
+    int timesWorked;
+    bool isBusy = false;
+
+    float stateUpdateTimer = 0f;
+    float stateUpdateInterval = 0.5f;
 
     [Header("Stuck Detection")]
     [SerializeField] float stuckCheckTime = 2f; //Tiempo que el agente espera para comprobar si está stuck
@@ -37,31 +46,15 @@ public class NPCAIBase : MonoBehaviour
     float stuckTimer; //Reloj que cuenta el tiempo de estar stuck
     float lastCheckTime; //Tiempo de chequeo previo de stuck
     Vector3 lastPosition; //Posición del último walkpoint perseguido
+
     Animator animator;
     Rigidbody rb;
-    #endregion
-    [SerializeField]GameManager gameManager; //Referencia a Scriptable Object?
-    Vector3 destination;
-    [SerializeField]Transform[] seatsCafeteria;
-    
-    [SerializeField]bool willSatAtWorkdesk;
-    public bool favourDone;//cuando se realice la tarea de la secretaría
-    public bool hasAsked;//cuando se realice la tarea de la secretaría
-    bool canAskYou;//cuando llegue a secretaría
-    int seatNumber;
-    float timePassed = -10;
-    [SerializeField] int activityToDo = -1;
-    [SerializeField] int lastActivity = -1;
-    [SerializeField] int favourAsked = -1; //0 Grapados, 1 papeles impresos, 2 Acreditaciones, 3 triturar, 4 clasificado, 5 papelera
-    int timesWorked;
-    float stateUpdateTimer = 0f;
-    float stateUpdateInterval = 0.5f;
-    bool isBusy = false;
-    public NPCAIBase npcScript;
+    [Header("Other References")]
+    [SerializeField]GameManager gameManager;
     [SerializeField] InteractingSystem interactingSystem;
-    //poner que tengan variables de hunger y que se vaya restando, así irán con tiempos regulados, tmb ciertos descansos/coffee breaks y hablar con otros hasta que estén de frente a ellos (raycasts)
-    bool favourChosen = false;
-
+    [SerializeField] FrontDeskManager frontDesk;
+    public NPCAIBase npcScript;
+    #endregion
     private void Awake()
     {
         agent = GetComponent<NavMeshAgent>();
@@ -79,8 +72,6 @@ public class NPCAIBase : MonoBehaviour
         gameManager.seatFree[3] = true;
         gameManager.seatFree[4] = true;
         gameManager.seatFree[5] = true;
-        //gameManager.seatFree = 5; //o los que haya
-        gameManager.strikes = 0;
     }
     private void Start()
     {
@@ -112,8 +103,10 @@ public class NPCAIBase : MonoBehaviour
             }
             if(patience <= 0)
             {
-                gameManager.strikes += 1;
+                gameManager.strikes ++;
+                gameManager.points--;
                 //animacion sad
+                frontDesk.ResetObjects();
                 favourDone = true;
             }
         }
@@ -161,7 +154,6 @@ public class NPCAIBase : MonoBehaviour
                     {
                         if ((Mathf.Abs(transform.position.z - seatsCafeteria[seatNumber].position.z) < 0.5f)) StartCoroutine(TimeInLocationRoutine());
                     }
-                    Debug.Log(name + " is my name.Trying to take the seat " + seatNumber);
                 }
             }
         }
@@ -181,7 +173,7 @@ public class NPCAIBase : MonoBehaviour
         }
         goalSet = true;
         
-        if(!gameManager.someoneInSecretary) VisitSecretary();
+        if(!gameManager.someoneInSecretary && (!gameManager.bossInQueue && !gameManager.visitorInQueue)) VisitSecretary();
         else
         {
             if (timesWorked >= 3)
@@ -324,18 +316,13 @@ public class NPCAIBase : MonoBehaviour
             if (!favourChosen)
             {
                 favourChosen = true;
-                favourAsked = Random.Range(0, 6);
+                bool alPrincipio = Random.Range(0, 2) == 0;
+                if(alPrincipio)favourAsked = Random.Range(0, 2);
+                else favourAsked = Random.Range(3, 5);
                 Debug.Log("se elige la tarea" + favourAsked);
                 hasAsked = true;//esto por ahora aqui
                 //Elegir petición actividad entre grapar, triturar, fotocopiar, imprimir, clasificar documentos
-                if(favourAsked == 0 || favourAsked == 3 || favourAsked == 5)//0 Grapados, 1 papeles impresos, 2 Acreditaciones, 3 triturar, 4 clasificado, 5 papelera
-                {
-                    //Te spawnean varias hojas random
-                }
-                else if(favourAsked == 4)
-                {
-                    //Te spawnean varias hojas con colores distintos
-                }
+                frontDesk.PrepareObjects(favourAsked);
             }
             else
             {
@@ -343,6 +330,10 @@ public class NPCAIBase : MonoBehaviour
                 {
                     if (!hasAsked) hasAsked = true;
                     Debug.Log("te dice tarea");
+                    if(favourAsked == -1)
+                    {
+                        favourChosen = false;
+                    }
                     //Enseñar diálogo con petición
                 }
             }
@@ -354,28 +345,44 @@ public class NPCAIBase : MonoBehaviour
         {
             if(handedObject != null)
             {
-                
-                if (favourAsked == handedObject.activityDone)
+                if (favourAsked != 1 && favourAsked != 0 && favourAsked == handedObject.activityDone)
                 {
-                    favourDone = true;
-                    favourChosen = false;
-                    favourAsked = -1;
-                    lastActivity = 4;
-                    hasAsked = false;
-                    handedObject.gameObject.SetActive(false);
-                    handedObject.gameObject.transform.parent = null;
-                    if(handedObject.activityDone == 0)
-                    {
-                        handedObject.gameObject.transform.GetChild(0).gameObject.SetActive(false);
-                        handedObject.gameObject.transform.GetChild(0).parent = null; //si son folios grapados se separan
-                    }
-                    Debug.Log("Te han dado lo correcto");
+                    gameManager.points++;
+                    Debug.Log("Te han dado lo correcto, caso 1");
+                }
+                else if (favourAsked == 1 && favourAsked == handedObject.activityDone && handedObject.activityDone == 1)
+                {
+                    gameManager.points++;
+                    Debug.Log("Te han dado lo correcto, caso 2");
+                }
+                else if (favourAsked == 0 && favourAsked == handedObject.activityDone && handedObject.activityDone == 0)
+                {
+                    gameManager.points++;
+                    Debug.Log("Te han dado lo correcto, caso 3");
                 }
                 else
                 {
+                    gameManager.strikes++;
+                    gameManager.points--;
                     Debug.Log("Yo no he pedido esto");
                     //quitar de que sea el hijo del player y poner strike? o quitar que sean hijos y volver a poner el transform.position como al spawnear
                 }
+                favourDone = true;
+                favourChosen = false;
+                favourAsked = -1;
+                lastActivity = 4;
+                hasAsked = false;
+                handedObject.gameObject.SetActive(false);
+                handedObject.gameObject.transform.parent = null;
+                if (handedObject.activityDone == 0)
+                {
+                    handedObject.gameObject.transform.GetChild(0).gameObject.SetActive(false);
+                    handedObject.gameObject.transform.GetChild(0).parent = null; //si son folios grapados se separan
+                }
+                frontDesk.ResetObjects();
+                interactingSystem.heldObject = null;
+                interactingSystem.npcAtFrontDesk = null;
+                
             }
             else
             {
@@ -383,13 +390,21 @@ public class NPCAIBase : MonoBehaviour
                 {
                     if (taskDone == favourAsked)
                     {
-                        favourDone = true;
-                        favourAsked = -1;
-                        hasAsked = false;
-                        lastActivity = activityToDo;
+                        gameManager.points++;
                         Debug.Log("Han hecho algo, y lo has recibido");
                     }
-                    else Debug.Log("Han hecho algo, pero no coincide");
+                    else
+                    {
+                        gameManager.strikes++;
+                        gameManager.points--;
+                        Debug.Log("Han hecho algo, pero no coincide");
+                    }
+                    frontDesk.ResetObjects();//revisar
+                    favourDone = true;
+                    favourChosen = false;
+                    favourAsked = -1;
+                    hasAsked = false;
+                    lastActivity = activityToDo;
                 }
             }
         }
@@ -404,6 +419,7 @@ public class NPCAIBase : MonoBehaviour
         
         if (isBusy) yield break;
         isBusy = true;
+        int lunchToday = 0;
         if (activityToDo > -1)
         {
             if (walkPointSet)
@@ -427,6 +443,8 @@ public class NPCAIBase : MonoBehaviour
                 {
                     transform.position = seatsCafeteria[seatNumber].position;
                     transform.rotation = seatsCafeteria[seatNumber].rotation;
+                    lunchToday = Random.Range(0, 2);
+                    objectsToUse[lunchToday].SetActive(true); //que estén siempre enfrente
                 }
                 else if (activityToDo == 4)
                 {
@@ -443,7 +461,6 @@ public class NPCAIBase : MonoBehaviour
 
                 float timeToSpend = Random.Range(min, max + 1);
                 yield return new WaitForSeconds(timeToSpend);
-                Debug.Log("Entramos en coroutina");
                 if (activityToDo == 4)
                 {
                     gameManager.someoneInSecretary = false;
@@ -451,6 +468,7 @@ public class NPCAIBase : MonoBehaviour
                 else if (activityToDo == 1 && !willSatAtWorkdesk)
                 {
                     gameManager.seatFree[seatNumber] = true;
+                    objectsToUse[lunchToday].SetActive(false); //que estén siempre enfrente
                 }
                 if (willSatAtWorkdesk) lastActivity = 0;
                 else lastActivity = activityToDo;
@@ -467,16 +485,14 @@ public class NPCAIBase : MonoBehaviour
     }
     void ResetActivityStatus()
     {
-        if((lastActivity != 0 && willSatAtWorkdesk) || (lastActivity == 0 && !willSatAtWorkdesk))
+        if((lastActivity != 0 && willSatAtWorkdesk) || (lastActivity == 0 && !willSatAtWorkdesk) || lastActivity == 1)
         {
-            Debug.Log("Resetting Status");
             obstacle.enabled = false;
             agent.enabled = true;
             //rb.isKinematic = false;
         }
     }
 
-    #region Movement Handler
     IEnumerator TimeInLocationRoutine()
     {
         arrived = true;
@@ -514,14 +530,7 @@ public class NPCAIBase : MonoBehaviour
             lastCheckTime = Time.time;
         }
     }
-    #endregion
+    
 
-    private void OnDrawGizmosSelected()
-    {
-        if (Application.isPlaying) return; //Determinar que esto solo se ejecute en el editor de Unity
-
-        Gizmos.color = Color.red; 
-        Gizmos.DrawSphere(destination, 1);
-    }
 }
 

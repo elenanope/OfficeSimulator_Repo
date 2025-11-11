@@ -12,8 +12,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1bf5c9d0a77d56440a6e8175090908ac, type: 3}
   m_Name: GameManager
   m_EditorClassIdentifier: 
-  workingPeople: 49
-  seatFree: 010101010101
+  workingPeople: 4
+  seatFree: 000000010101
   someoneInSecretary: 1
+  bossInQueue: 0
+  visitorInQueue: 1
   strikes: 0
+  points: 6
   tasksPoints: 0
+  cinematic: {fileID: 0}

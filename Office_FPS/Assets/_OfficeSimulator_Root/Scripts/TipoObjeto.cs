@@ -12,12 +12,15 @@ public class TipoObjeto : MonoBehaviour
     public bool canBeUsedAlone;//para botones random
     public bool isFull;
     public GameObject objectOnTop = null;
+    public TipoObjeto printerButton = null;
     public bool pickable;
     public int activityDone = -1;//0 Grapados, 1 papeles impresos, 2 Acreditaciones, 
     public int partsLeft; //grapas, etc
     [SerializeField] bool unlimited; //grapas, etc
+    [SerializeField] bool container; //caja de grapas
     [SerializeField] bool justAButton;
     [SerializeField] int[] coloursLeft; //0 black, 1 yellow, 2 pink, 3 cyan
+    public int paperType; //materiales de folios: 0 + 1 básicos, 2+3 confidential, 4 blue, 5 green, 6 yellow
     int maxParts;
     public bool workProp;//grapadora, etc. para que al cogerlo esté en una posición distinta
     //public bool sticky;
@@ -30,7 +33,7 @@ public class TipoObjeto : MonoBehaviour
     }
     public void UseObject()
     {
-        if(isFull)
+        /*if(isFull)
         {
             if(!unlimited)partsLeft--;
             if (partsLeft == 0) isFull = false;
@@ -40,40 +43,72 @@ public class TipoObjeto : MonoBehaviour
                 Debug.Log("Usas la grapadora");
             }
         }
-        else if(justAButton)
+        else*/ if(justAButton)//necesita que esté en canBeUsedAlone
         {
-            if(objectType == 10)
+            if(container)
             {
-                if (partsLeft > 0 && objectOnTop != null) isFull = true;//el maximo de folios son 10
-                else isFull = false;
-                if (coloursLeft[0] == 10 && coloursLeft[1] == 10 && coloursLeft[2] == 10 && coloursLeft[3] == 10 && isFull)
+                if(objectType == 0)
                 {
-                    Debug.Log("Button pressed");
-                    coloursLeft[0] -= Random.Range(0, 4);
-                    coloursLeft[1] -= Random.Range(0, 3);
-                    coloursLeft[2] -= Random.Range(0, 3);
-                    coloursLeft[3] -= Random.Range(0, 3);
-                    partsLeft--;
+                    //ahora sostendrás negro
                 }
-                else
+                else if(objectType == 1)
                 {
-                    if (coloursLeft[0] != 10) Debug.Log("Te falta negro");
-                    else if (coloursLeft[1] != 10) Debug.Log("Te falta amarillo");
-                    else if (coloursLeft[2] != 10) Debug.Log("Te falta rosa");
-                    else if (coloursLeft[3] != 10) Debug.Log("Te falta cyan");
-                    else if (!isFull) Debug.Log("Te falta papel");
+                    //ahora sostendrás amarillo
+                }
+                else if(objectType == 2)
+                {
+                    //ahora sostendrás rosa
+                }
+                else if(objectType == 3)
+                {
+                    //ahora sostendrás cyan
+                }
+                else if(objectType == 4)
+                {
+                    //ahora sostendrás grapas
+                }
+                else if(objectType == 10)
+                {
+                    //ahora sostendrás folios
                 }
             }
-            else if(objectType == 15 && !mainPart)
+            else
             {
-                SceneManager.LoadScene(0);
+                if (objectType == 10)
+                {
+                    //if (partsLeft > 0 && objectOnTop != null) isFull = true;//el maximo de folios son 10
+                    if (partsLeft > 0) isFull = true;//el maximo de folios son 10
+                    else isFull = false;
+                    if (coloursLeft[0] == 10 && coloursLeft[1] == 10 && coloursLeft[2] == 10 && coloursLeft[3] == 10 && isFull)
+                    {
+                        Debug.Log("Button pressed");
+                        coloursLeft[0] -= Random.Range(0, 4);
+                        coloursLeft[1] -= Random.Range(0, 3);
+                        coloursLeft[2] -= Random.Range(0, 3);
+                        coloursLeft[3] -= Random.Range(0, 3);
+                        partsLeft--;
+                    }
+                    else
+                    {
+                        if (coloursLeft[0] != 10) Debug.Log("Te falta negro");
+                        else if (coloursLeft[1] != 10) Debug.Log("Te falta amarillo");
+                        else if (coloursLeft[2] != 10) Debug.Log("Te falta rosa");
+                        else if (coloursLeft[3] != 10) Debug.Log("Te falta cyan");
+                        else if (!isFull) Debug.Log("Te falta papel");
+                    }
+                    if(objectType == 10 && isFull)
+                    {
+                        //objectOnTop = this.gameObject.GetComponentInParent<TipoObjeto>().objectOnTop;
+                        objectOnTop.GetComponent<TipoObjeto>().activityDone = 1;
+                    }
+                }
+                else if (objectType == 15 && !mainPart)
+                {
+                    SceneManager.LoadScene(0);
+                }
+                //Hacer lo que haga el botón
+                //reproducir sonido de boton
             }
-            //Hacer lo que haga el botón
-            //reproducir sonido de boton
-        }
-        else if(objectType == 7 && !mainPart)
-        {
-            //recoger la bolsa y cambia una condición (pickable?) si le vuelves a dar podrás cogerlo
         }
     }
     public void Replenish(int objectType)
