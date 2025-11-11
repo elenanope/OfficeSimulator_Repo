@@ -103,10 +103,8 @@ public class BossAI : MonoBehaviour
             {
                 gameManager.strikes ++;
                 gameManager.points--;
-                Debug.Log("PAciencia acabada");
-                frontDesk.ResetObjects();
-                //animacion sad
-                favourDone = true;
+                frontDesk.Dialogue(7);
+                StartCoroutine(TimeInLocationRoutine(2));
             }
         }
         //aumentar variables de stats
@@ -138,14 +136,14 @@ public class BossAI : MonoBehaviour
                 {
                     if (Mathf.Abs(transform.position.x - destinations[4].position.x) < 0.5f) //Mathf.Abs para que siempre sea positivo
                     {
-                        if ((Mathf.Abs(transform.position.z - destinations[4].position.z) < 0.5f)) StartCoroutine(TimeInLocationRoutine());
+                        if ((Mathf.Abs(transform.position.z - destinations[4].position.z) < 0.5f)) StartCoroutine(TimeInLocationRoutine(0));
                     }
                 }
                 else if (willSatAtWorkdesk)
                 {
                     if (Mathf.Abs(transform.position.x - destinations[0].position.x) < 0.5f)
                     {
-                        if ((Mathf.Abs(transform.position.z - destinations[0].position.z) < 0.5f)) StartCoroutine(TimeInLocationRoutine());
+                        if ((Mathf.Abs(transform.position.z - destinations[0].position.z) < 0.5f)) StartCoroutine(TimeInLocationRoutine(0));
                     }
                 }
             }
@@ -159,7 +157,6 @@ public class BossAI : MonoBehaviour
         if (!gameManager.someoneInSecretary) VisitSecretary();
         else
         {
-            gameManager.bossInQueue = true;
             willSatAtWorkdesk = true;
             if (randomActivity < 60) Work();//40
             else if (randomActivity < 75) Eat();//15
@@ -265,14 +262,16 @@ public class BossAI : MonoBehaviour
                 Debug.Log("se elige la tarea" + favourAsked);
                 hasAsked = true;//esto por ahora aqui
                 //Elegir petición actividad entre grapar, triturar, fotocopiar, imprimir, clasificar documentos
-                frontDesk.PrepareObjects(favourAsked);
+                frontDesk.objectsSet = false;
+                frontDesk.StartActivity(favourAsked);
             }
             else
             {
                 if (canAskYou)
                 {
                     if (!hasAsked) hasAsked = true;
-                    Debug.Log("te dice tarea");
+                    Debug.Log("te dice tarea"); 
+                    frontDesk.StartActivity(favourAsked);
                     //Enseñar diálogo con petición
                 }
             }
@@ -289,24 +288,29 @@ public class BossAI : MonoBehaviour
                 {
                     gameManager.points++;
                     Debug.Log("Te han dado lo correcto, caso 1");
+                    frontDesk.Dialogue(5);
                 }
                 else if (favourAsked == 1 && favourAsked == handedObject.activityDone && handedObject.activityDone == 1)
                 {
                     gameManager.points++;
                     Debug.Log("Te han dado lo correcto, caso 2");
+                    frontDesk.Dialogue(5);
                 }
                 else if (favourAsked == 0 && favourAsked == handedObject.activityDone && handedObject.activityDone == 0)
                 {
                     gameManager.points++;
                     Debug.Log("Te han dado lo correcto, caso 3");
+                    frontDesk.Dialogue(5);
                 }
                 else
                 {
                     gameManager.strikes++;
                     gameManager.points--;
                     Debug.Log("Yo no he pedido esto");
+                    frontDesk.Dialogue(9);
                     //quitar de que sea el hijo del player y poner strike? o quitar que sean hijos y volver a poner el transform.position como al spawnear
                 }
+                StartCoroutine(TimeInLocationRoutine(1));
                 favourDone = true;
                 favourChosen = false;
                 favourAsked = -1;
@@ -319,9 +323,6 @@ public class BossAI : MonoBehaviour
                     handedObject.gameObject.transform.GetChild(0).gameObject.SetActive(false);
                     handedObject.gameObject.transform.GetChild(0).parent = null; //si son folios grapados se separan
                 }
-                interactingSystem.heldObject = null;
-                interactingSystem.bossAtFrontDesk = null;
-                frontDesk.ResetObjects();
                 
             }
             else
@@ -332,19 +333,16 @@ public class BossAI : MonoBehaviour
                     {
                         gameManager.points++;
                         Debug.Log("Han hecho algo, y lo has recibido");
+                        frontDesk.Dialogue(5);
                     }
                     else
                     {
                         gameManager.strikes++;
                         gameManager.points--;
                         Debug.Log("Han hecho algo, pero no coincide");
+                        frontDesk.Dialogue(9);
                     }
-                    favourDone = true; 
-                    favourChosen = false;
-                    favourAsked = -1;
-                    hasAsked = false;
-                    lastActivity = activityToDo;
-                    frontDesk.ResetObjects();
+                    StartCoroutine(TimeInLocationRoutine(1));
                 }
             }
         }
@@ -402,6 +400,7 @@ public class BossAI : MonoBehaviour
                 if (activityToDo == 4) gameManager.someoneInSecretary = false;
                 else if (activityToDo == 5) visitor.meetingState = 3;
 
+                gameManager.bossInQueue = true;
                 if (willSatAtWorkdesk)
                 {
                     lastActivity = 0;
@@ -426,23 +425,46 @@ public class BossAI : MonoBehaviour
         }
     }
 
-    IEnumerator TimeInLocationRoutine()
+    IEnumerator TimeInLocationRoutine(int caseNumber) // 0 llegar, 1 cancelar y ya,2 fin paciencia
     {
-        arrived = true;
-        if (activityToDo == 4)
+        if(caseNumber == 0)
         {
-            canAskYou = true;
+            arrived = true;
+            if (activityToDo == 4)
+            {
+                canAskYou = true;
+            }
+            else if (activityToDo == 5)
+            {
+                visitor.meetingState = 2;
+            }
+            yield break;
         }
-        else if(activityToDo == 5)
+        else if(caseNumber == 1)
         {
-            visitor.meetingState = 2;
+            yield return new WaitForSeconds(2);
+            favourDone = true;
+            favourChosen = false;
+            favourAsked = -1;
+            hasAsked = false;
+            lastActivity = activityToDo;
+            interactingSystem.heldObject = null;
+            interactingSystem.bossAtFrontDesk = null;
+            frontDesk.ResetObjects();
         }
-        yield break;
+        else
+        {
+            yield return new WaitForSeconds(2);
+            frontDesk.ResetObjects();
+            //animacion sad
+            favourDone = true;
+        }
     }
 
     public void HeadBackToOffice()
     {
         Debug.Log("Soy llamado a caaasa");
+        gameManager.bossInQueue = false;
         StopAllCoroutines();
         if(!willSatAtWorkdesk)
         {

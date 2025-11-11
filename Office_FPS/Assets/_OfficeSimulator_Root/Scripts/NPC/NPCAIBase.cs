@@ -105,9 +105,8 @@ public class NPCAIBase : MonoBehaviour
             {
                 gameManager.strikes ++;
                 gameManager.points--;
-                //animacion sad
-                frontDesk.ResetObjects();
-                favourDone = true;
+                frontDesk.Dialogue(7);
+                StartCoroutine(TimeInLocationRoutine(2));
             }
         }
         //aumentar variables de stats
@@ -138,21 +137,21 @@ public class NPCAIBase : MonoBehaviour
                 {
                     if (Mathf.Abs(transform.position.x - destinations[4].position.x) < 0.5f) //Mathf.Abs para que siempre sea positivo
                     {
-                        if ((Mathf.Abs(transform.position.z - destinations[4].position.z) < 0.5f)) StartCoroutine(TimeInLocationRoutine());
+                        if ((Mathf.Abs(transform.position.z - destinations[4].position.z) < 0.5f)) StartCoroutine(TimeInLocationRoutine(0));
                     }
                 }
                 else if(willSatAtWorkdesk)
                 {
                     if (Mathf.Abs(transform.position.x - destinations[0].position.x) < 0.5f)
                     {
-                        if ((Mathf.Abs(transform.position.z - destinations[0].position.z) < 0.5f)) StartCoroutine(TimeInLocationRoutine());
+                        if ((Mathf.Abs(transform.position.z - destinations[0].position.z) < 0.5f)) StartCoroutine(TimeInLocationRoutine(0));
                     }
                 }
                 else if(activityToDo == 1 && !willSatAtWorkdesk)
                 {
                     if (Mathf.Abs(transform.position.x - seatsCafeteria[seatNumber].position.x) < 0.5f)
                     {
-                        if ((Mathf.Abs(transform.position.z - seatsCafeteria[seatNumber].position.z) < 0.5f)) StartCoroutine(TimeInLocationRoutine());
+                        if ((Mathf.Abs(transform.position.z - seatsCafeteria[seatNumber].position.z) < 0.5f)) StartCoroutine(TimeInLocationRoutine(0));
                     }
                 }
             }
@@ -321,15 +320,17 @@ public class NPCAIBase : MonoBehaviour
                 else favourAsked = Random.Range(3, 5);
                 Debug.Log("se elige la tarea" + favourAsked);
                 hasAsked = true;//esto por ahora aqui
-                //Elegir petición actividad entre grapar, triturar, fotocopiar, imprimir, clasificar documentos
-                frontDesk.PrepareObjects(favourAsked);
+                                //Elegir petición actividad entre grapar, triturar, fotocopiar, imprimir, clasificar documentos
+
+                frontDesk.objectsSet = false;
+                frontDesk.StartActivity(favourAsked);
             }
             else
             {
                 if (canAskYou)
                 {
                     if (!hasAsked) hasAsked = true;
-                    Debug.Log("te dice tarea");
+                    frontDesk.StartActivity(favourAsked);
                     if(favourAsked == -1)
                     {
                         favourChosen = false;
@@ -348,30 +349,30 @@ public class NPCAIBase : MonoBehaviour
                 if (favourAsked != 1 && favourAsked != 0 && favourAsked == handedObject.activityDone)
                 {
                     gameManager.points++;
+                    frontDesk.Dialogue(5);
                     Debug.Log("Te han dado lo correcto, caso 1");
                 }
                 else if (favourAsked == 1 && favourAsked == handedObject.activityDone && handedObject.activityDone == 1)
                 {
                     gameManager.points++;
+                    frontDesk.Dialogue(5);
                     Debug.Log("Te han dado lo correcto, caso 2");
                 }
                 else if (favourAsked == 0 && favourAsked == handedObject.activityDone && handedObject.activityDone == 0)
                 {
                     gameManager.points++;
+                    frontDesk.Dialogue(5);
                     Debug.Log("Te han dado lo correcto, caso 3");
                 }
                 else
                 {
                     gameManager.strikes++;
                     gameManager.points--;
+                    frontDesk.Dialogue(8);
                     Debug.Log("Yo no he pedido esto");
                     //quitar de que sea el hijo del player y poner strike? o quitar que sean hijos y volver a poner el transform.position como al spawnear
                 }
-                favourDone = true;
-                favourChosen = false;
-                favourAsked = -1;
-                lastActivity = 4;
-                hasAsked = false;
+                StartCoroutine(TimeInLocationRoutine(1));
                 handedObject.gameObject.SetActive(false);
                 handedObject.gameObject.transform.parent = null;
                 if (handedObject.activityDone == 0)
@@ -379,9 +380,6 @@ public class NPCAIBase : MonoBehaviour
                     handedObject.gameObject.transform.GetChild(0).gameObject.SetActive(false);
                     handedObject.gameObject.transform.GetChild(0).parent = null; //si son folios grapados se separan
                 }
-                frontDesk.ResetObjects();
-                interactingSystem.heldObject = null;
-                interactingSystem.npcAtFrontDesk = null;
                 
             }
             else
@@ -391,20 +389,17 @@ public class NPCAIBase : MonoBehaviour
                     if (taskDone == favourAsked)
                     {
                         gameManager.points++;
+                        frontDesk.Dialogue(5);
                         Debug.Log("Han hecho algo, y lo has recibido");
                     }
                     else
                     {
                         gameManager.strikes++;
                         gameManager.points--;
+                        frontDesk.Dialogue(8);
                         Debug.Log("Han hecho algo, pero no coincide");
                     }
-                    frontDesk.ResetObjects();//revisar
-                    favourDone = true;
-                    favourChosen = false;
-                    favourAsked = -1;
-                    hasAsked = false;
-                    lastActivity = activityToDo;
+                    StartCoroutine(TimeInLocationRoutine(1));
                 }
             }
         }
@@ -493,12 +488,34 @@ public class NPCAIBase : MonoBehaviour
         }
     }
 
-    IEnumerator TimeInLocationRoutine()
+    IEnumerator TimeInLocationRoutine(int caseNumber)
     {
-        arrived = true;
-        if(activityToDo == 4)
+        if(caseNumber == 0)
         {
-            canAskYou = true;
+            arrived = true;
+            if (activityToDo == 4)
+            {
+                canAskYou = true;
+            }
+        }
+        else if (caseNumber == 1)
+        {
+            yield return new WaitForSeconds(2);
+            favourDone = true;
+            favourChosen = false;
+            favourAsked = -1;
+            hasAsked = false;
+            lastActivity = activityToDo;
+            interactingSystem.heldObject = null;
+            interactingSystem.bossAtFrontDesk = null;
+            frontDesk.ResetObjects();
+        }
+        else
+        {
+            yield return new WaitForSeconds(2);
+            frontDesk.ResetObjects();
+            //animacion sad
+            favourDone = true;
         }
         yield break;
     }

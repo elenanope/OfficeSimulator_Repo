@@ -55,7 +55,7 @@ public class VisitorAI : MonoBehaviour
     void Update()
     {
         timePassed += Time.deltaTime;
-        if (timePassed >= 10)
+        if (timePassed >= 5)
         {
             timePassed = 0;
             if((cardState == -1 ||meetingState==3) && !started)
@@ -89,8 +89,8 @@ public class VisitorAI : MonoBehaviour
             NPCStateUpdater();
             stateUpdateTimer = 0f;
         }
-        if (!arrived) animator.SetBool("isWalking", true); //retocar esto para casos específicos
-        else animator.SetBool("isWalking", false);
+        //if (!arrived) animator.SetBool("isWalking", true); //retocar esto para casos específicos
+        //else animator.SetBool("isWalking", false);
     }
 
     void NPCStateUpdater()
@@ -101,21 +101,21 @@ public class VisitorAI : MonoBehaviour
             {
                 if (Mathf.Abs(transform.position.x - frontDesk.position.x) < 0.5f) //Mathf.Abs para que siempre sea positivo
                 {
-                    if ((Mathf.Abs(transform.position.z - frontDesk.position.z) < 0.5f)) StartCoroutine(TimeInLocationRoutine());
+                    if ((Mathf.Abs(transform.position.z - frontDesk.position.z) < 0.5f)) StartCoroutine(TimeInLocationRoutine(0));
                 }
             }
             else if (cardState == 2 && meetingState == 0)//va a reunion
             {
                 if (Mathf.Abs(transform.position.x - bossOffice.position.x) < 0.5f)
                 {
-                    if ((Mathf.Abs(transform.position.z - bossOffice.position.z) < 0.5f)) StartCoroutine(TimeInLocationRoutine());
+                    if ((Mathf.Abs(transform.position.z - bossOffice.position.z) < 0.5f)) StartCoroutine(TimeInLocationRoutine(0));
                 }
             }
             else if (cardState == 3 && meetingState == 3)//se va
             {
                 if (Mathf.Abs(transform.position.x - initialPos.position.x) < 0.5f)
                 {
-                    if ((Mathf.Abs(transform.position.z - initialPos.position.z) < 0.5f)) StartCoroutine(TimeInLocationRoutine());
+                    if ((Mathf.Abs(transform.position.z - initialPos.position.z) < 0.5f)) StartCoroutine(TimeInLocationRoutine(0));
                 }
             }
         }
@@ -154,11 +154,29 @@ public class VisitorAI : MonoBehaviour
             if (cardState == 0)
             {
                 cardState = 1;
+                frontDeskManager.objectsSet = false;
+                frontDeskManager.StartActivity(2);
                 Debug.Log("te dice tarea");
             }
-            else
+            else if(cardState == 1)
             {
                 Debug.Log("te repite la tarea");
+                frontDeskManager.StartActivity(2);
+                //frontDeskManager.Dialogue(2);
+            }
+            else if(cardState == 2 && meetingState == 3)
+            {
+
+                frontDeskManager.visitorCard.SetActive(true);
+                frontDeskManager.visitorCard.GetComponent<Collider>().enabled = true;
+                frontDeskManager.visitorCard.GetComponent<Rigidbody>().useGravity = true;
+                frontDeskManager.visitorCard.GetComponent<Rigidbody>().isKinematic = false;
+                gameManager.someoneInSecretary = false;
+                frontDeskManager.visitorCard.transform.position = frontDeskManager.spawnPoint1.position;
+                agent.SetDestination(initialPos.position);
+                cardState = -1;
+                meetingState = 0;
+                timeUntilNewAsk = 90;
             }
             //Enseñar diálogo con petición
         }
@@ -177,22 +195,21 @@ public class VisitorAI : MonoBehaviour
                     patience = maxPatience;
 
                     handedObject.gameObject.SetActive(false);
-                    handedObject.gameObject.transform.parent = null;
-                    ResetActivityStatus();
-                    gameManager.someoneInSecretary = false;
-                    agent.SetDestination(bossOffice.position);
-                    interactingSystem.heldObject = null;
-                    interactingSystem.visitorAtFrontDesk = null;
+                    handedObject.gameObject.transform.parent = null; 
+                    StartCoroutine(TimeInLocationRoutine(1));
                     gameManager.points++;
+                    frontDeskManager.Dialogue(5);
                     Debug.Log("Te han dado lo correcto");
                 }
                 else
                 {
+                    frontDeskManager.Dialogue(6);
                     Debug.Log("Yo no he pedido esto");
                 }
             }
             else
             {
+                frontDeskManager.Dialogue(6);
                 Debug.Log("Eh, que solo quiero una acreditacion");
             }
         }
@@ -213,31 +230,45 @@ public class VisitorAI : MonoBehaviour
         agent.enabled = true;
     }
 
-    IEnumerator TimeInLocationRoutine()
+    IEnumerator TimeInLocationRoutine(int caseNumber)
     {
-        arrived = true;
-        if (cardState == -1)
+        if(caseNumber == 0)
         {
-            cardState = 0;
-            canAskYou = true;
-        }
-        else if(cardState == 2 && meetingState == 0)
-        {
-            meetingState = 1;
-            animator.SetBool("isSitting", true);
-            boss.HeadBackToOffice();
-            StartCoroutine(WaitInOffice());
+            arrived = true;
+            if (cardState == -1)
+            {
+                cardState = 0;
+                canAskYou = true;
+            }
+            else if (cardState == 2 && meetingState == 0)
+            {
+                meetingState = 1;
+                animator.SetBool("isSitting", true);
+                boss.HeadBackToOffice();
+                StartCoroutine(WaitInOffice());
+                yield break;
+            }
+            else if (cardState == 2 && meetingState == 3) //comprobar que hace esto!!!
+            {
+                //soltar acreditacion en punto
+                frontDeskManager.visitorCard.SetActive(true);
+                frontDeskManager.visitorCard.transform.position = frontDeskManager.spawnPoint1.position;
+                agent.SetDestination(initialPos.position);
+                cardState = -1;
+                meetingState = 0;
+            }
             yield break;
         }
-        else if(cardState == 2 && meetingState == 3) //comprobar que hace esto!!!
+        else if(caseNumber == 1)
         {
-            //soltar acreditacion en punto
-            frontDeskManager.visitorCard.SetActive(true);
-            frontDeskManager.visitorCard.transform.position = frontDeskManager.spawnPoint1.position;
-            agent.SetDestination(initialPos.position);
-            cardState = -1;
-            meetingState = 0;
+
+            ResetActivityStatus();
+            gameManager.someoneInSecretary = false;
+            agent.SetDestination(bossOffice.position);
+            animator.SetBool("isWalking", true);
+            interactingSystem.heldObject = null;
+            interactingSystem.visitorAtFrontDesk = null;
         }
-        yield break;
+
     }
 }

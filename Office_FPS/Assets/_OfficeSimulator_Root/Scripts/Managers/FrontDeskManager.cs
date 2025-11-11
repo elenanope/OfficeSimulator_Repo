@@ -1,7 +1,11 @@
 using UnityEngine;
+using System.Collections;
 
 public class FrontDeskManager : MonoBehaviour
 {
+    [Header("Objects Management")]
+    int activityChosen;
+    public bool objectsSet;
     [SerializeField] Material[] sheetsMats; //materiales de folios: 0 + 1 básicos, 2+3 confidential, 4 blue, 5 green, 6 yellow
     public GameObject visitorCard;
     [SerializeField] GameObject paper1;
@@ -19,6 +23,18 @@ public class FrontDeskManager : MonoBehaviour
     [SerializeField] Transform printingPoint;
     [SerializeField] int eleccion1 = 0;
 
+    [Header("Dialogue Manager")]
+    [SerializeField] GameObject dialoguePanel;
+    [SerializeField] TMPro.TMP_Text dialogueText;
+
+    float typingTime;
+    bool didDialogueStart;
+    [SerializeField]bool dialogueOver;
+    int lineIndex;
+
+    [SerializeField, TextArea(2, 4)] string[] dialogueLines;// 0 grapar, 1 fotocopiar, 2 acreditaciones, 3 deshacerte, 4 clasificar documentos, 5 Bienn gracias, 6 noo, pero va que tengo prisa
+                                                            // 7 paciencia acabada: lo siento pero no has hecho muy buen trabajo, 8 yo no queria eso, adios, 9 mal, inadmisible (a la primera)
+
     private void Awake()
     {
         paper1.transform.position = spawnPoint1.position;
@@ -26,6 +42,7 @@ public class FrontDeskManager : MonoBehaviour
         paper1.SetActive(false);
         paper2.SetActive(false);
     }
+    #region Office Tasks
     public void Printing()//solo llamar si hay folio encima
     {
         paper2.SetActive(true);
@@ -33,8 +50,19 @@ public class FrontDeskManager : MonoBehaviour
         infoPaper2.paperType = eleccion1;
         //meshRenderer2.material = sheetsMats[materialChosen];
     }
+    public void StartActivity(int favourAsked)
+    {
+        activityChosen = favourAsked;
+        Dialogue(favourAsked); 
+        if (!objectsSet)
+        {
+            PrepareObjects(activityChosen);
+        }
+    }
     public void PrepareObjects(int favourAsked)
     {
+        objectsSet = true;
+        activityChosen = favourAsked;
         int eleccion2 = 0;
         if (favourAsked == 0)
         {
@@ -85,6 +113,7 @@ public class FrontDeskManager : MonoBehaviour
     }
     public void ResetObjects()
     {
+        objectsSet = false;
         paper1.transform.position = spawnPoint1.position;
         paper2.transform.position = spawnPoint2.position;
         paper1.transform.parent = null;
@@ -100,4 +129,45 @@ public class FrontDeskManager : MonoBehaviour
         paper1.SetActive(false);
         paper2.SetActive(false);
     }
+    #endregion
+    #region Dialogue Management
+    void StartDialogue()
+    {
+            didDialogueStart = true;
+            dialoguePanel.SetActive(true);
+            StartCoroutine(ShowLine());
+    }
+
+    void NextDialogueLine()
+    {
+        didDialogueStart = false;
+        dialogueOver = true;
+        dialoguePanel.SetActive(false);
+    }
+
+    private IEnumerator ShowLine()
+    {
+        dialogueText.text = string.Empty;
+
+        foreach (char ch in dialogueLines[lineIndex])
+        {
+            dialogueText.text += ch;
+            yield return new WaitForSecondsRealtime(typingTime);
+        }
+
+        yield return new WaitForSecondsRealtime(2);
+        NextDialogueLine();
+    }
+
+    public void Dialogue(int lineToRead)
+    {
+        lineIndex = lineToRead;
+        if(!didDialogueStart)
+        {
+            StopAllCoroutines();
+        }
+        StartDialogue();
+    }
+
+    #endregion
 }
