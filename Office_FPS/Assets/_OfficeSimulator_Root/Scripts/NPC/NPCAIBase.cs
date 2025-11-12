@@ -50,7 +50,7 @@ public class NPCAIBase : MonoBehaviour
     Animator animator;
     Rigidbody rb;
     [Header("Other References")]
-    [SerializeField]GameManager gameManager;
+    [SerializeField]SO_GameManager gameManager;
     [SerializeField] InteractingSystem interactingSystem;
     [SerializeField] FrontDeskManager frontDesk;
     public NPCAIBase npcScript;

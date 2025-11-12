@@ -25,7 +25,7 @@ public class InteractingSystem : MonoBehaviour
 
     [Header("Feedback References")]
     [SerializeField] GameObject impactEffect; //Referencia al VFX de impacto de bala
-    [SerializeField] GameManager gameManager;
+    [SerializeField] SO_GameManager gameManager;
 
     //Bools de estado
     [SerializeField] bool interacting; //Indica que estamos disparando

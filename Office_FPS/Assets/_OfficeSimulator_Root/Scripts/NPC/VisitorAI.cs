@@ -36,7 +36,7 @@ public class VisitorAI : MonoBehaviour
     Animator animator;
     Rigidbody rb;
     [Header("Other References")]
-    [SerializeField] GameManager gameManager;
+    [SerializeField] SO_GameManager gameManager;
     [SerializeField] InteractingSystem interactingSystem;
     [SerializeField] FrontDeskManager frontDeskManager;
     #endregion
@@ -211,6 +211,8 @@ public class VisitorAI : MonoBehaviour
                     handedObject.gameObject.transform.parent = null; 
                     StartCoroutine(TimeInLocationRoutine(1));
                     gameManager.points++;
+                    gameManager.Score(true);
+                    frontDeskManager.ShowNotification(true);
                     frontDeskManager.Dialogue(5);
                     Debug.Log("Te han dado lo correcto");
                 }

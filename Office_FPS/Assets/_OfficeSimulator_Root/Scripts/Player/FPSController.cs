@@ -31,7 +31,7 @@ public class FPSController : MonoBehaviour
     Vector2 moveInput;
     Vector2 lookInput;
     float lookRotation;
-    [SerializeField] GameManager gameManager;
+    [SerializeField] SO_GameManager gameManager;
     [SerializeField] Image energyBarFill;
     [SerializeField] GameObject blinkingPanel;
     [SerializeField] Animator animBody;

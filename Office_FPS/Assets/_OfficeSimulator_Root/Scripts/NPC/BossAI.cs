@@ -50,7 +50,7 @@ public class BossAI : MonoBehaviour
     Animator animator;
     Rigidbody rb;
     [Header("Other References")]
-    [SerializeField] GameManager gameManager;
+    [SerializeField] SO_GameManager gameManager;
     [SerializeField] InteractingSystem interactingSystem;
     [SerializeField] FrontDeskManager frontDesk;
     [SerializeField] VisitorAI visitor;
@@ -88,7 +88,6 @@ public class BossAI : MonoBehaviour
             lastActivity = 4;
             //apagar todos los objetos que había mostrado
             gameManager.someoneInSecretary = false;
-            Debug.Log("Vuelta, caso 1");
             Work();
         }
         timePassed += Time.deltaTime;
@@ -125,7 +124,6 @@ public class BossAI : MonoBehaviour
         {
             if (!goalSet)
             {
-                Debug.Log("Aqui aqui");
                 if (timesWorked < 12) Work();
                 else ChooseActivity();
 
@@ -153,7 +151,6 @@ public class BossAI : MonoBehaviour
     {
         int randomActivity = Random.Range(0, 101);
         goalSet = true;
-        Debug.Log("elijo");
         if (!gameManager.someoneInSecretary) VisitSecretary();
         else
         {
@@ -251,7 +248,6 @@ public class BossAI : MonoBehaviour
     {
         if (activityToDo == 4)
         {
-            Debug.Log("Se pregunta un favor");
             goalSet = true;
             if (!favourChosen)
             {
@@ -259,7 +255,6 @@ public class BossAI : MonoBehaviour
                 bool alPrincipio = Random.Range(0, 2) == 0;
                 if (alPrincipio) favourAsked = Random.Range(0, 2);
                 else favourAsked = Random.Range(3, 5);
-                Debug.Log("se elige la tarea" + favourAsked);
                 hasAsked = true;//esto por ahora aqui
                 //Elegir petición actividad entre grapar, triturar, fotocopiar, imprimir, clasificar documentos
                 frontDesk.objectsSet = false;
@@ -270,7 +265,6 @@ public class BossAI : MonoBehaviour
                 if (canAskYou)
                 {
                     if (!hasAsked) hasAsked = true;
-                    Debug.Log("te dice tarea"); 
                     frontDesk.StartActivity(favourAsked);
                     //Enseñar diálogo con petición
                 }
@@ -279,7 +273,6 @@ public class BossAI : MonoBehaviour
     }
     public void Receive(TipoObjeto handedObject, int taskDone)
     {
-        Debug.Log("Jefe recibe");
         if (hasAsked && favourAsked != -1)
         {
             if (handedObject != null)
@@ -347,13 +340,11 @@ public class BossAI : MonoBehaviour
     }
     void ReturnToSeat()
     {
-        Debug.Log("Jefe vuelve");
         agent.SetDestination(destinations[0].position); //para que se siente en su mesa
         animator.SetBool("isSitting", false);
     }
     IEnumerator ActivityDuration(int min, int max)
     {
-        Debug.Log("Jefe resetea actividad");
         if (isBusy) yield break;
         isBusy = true;
         int lunchToday = 0;
@@ -462,7 +453,6 @@ public class BossAI : MonoBehaviour
 
     public void HeadBackToOffice()
     {
-        Debug.Log("Soy llamado a caaasa");
         gameManager.bossInQueue = false;
         StopAllCoroutines();
         if(!willSatAtWorkdesk)
@@ -475,7 +465,8 @@ public class BossAI : MonoBehaviour
                 hasAsked = false;
                 lastActivity = activityToDo;
                 frontDesk.ResetObjects();
-                Debug.Log("Perdon, llego tarde a un meeting");
+                frontDesk.Dialogue(10);
+                //Debug.Log("Perdon, llego tarde a un meeting");
             }
             agent.SetDestination(destinations[0].position);
             walkPointSet = true;

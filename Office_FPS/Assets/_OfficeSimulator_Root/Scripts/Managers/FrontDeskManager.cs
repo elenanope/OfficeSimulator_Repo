@@ -170,7 +170,7 @@ public class FrontDeskManager : MonoBehaviour
         {
             if (!didDialogueStart)
             {
-                StopAllCoroutines();
+                StopCoroutine(ShowLine());
                 StartDialogue();
             }
         }
@@ -178,7 +178,7 @@ public class FrontDeskManager : MonoBehaviour
         {
             if (!didDialogueStart)
             {
-                StopAllCoroutines();
+                StopCoroutine(ShowLine());
             }
 
             StartDialogue();
@@ -187,7 +187,12 @@ public class FrontDeskManager : MonoBehaviour
     }
 
     #endregion
-    public IEnumerator ShowNotification(bool isPositive)
+    public void ShowNotification(bool isPositive)
+    {
+        Debug.Log("se llega aqui");
+        StartCoroutine(ActivateText(isPositive));
+    }
+    IEnumerator ActivateText(bool isPositive)
     {
         if(isPositive) pointsText.SetActive(true);
         else strikesText.SetActive(true);
