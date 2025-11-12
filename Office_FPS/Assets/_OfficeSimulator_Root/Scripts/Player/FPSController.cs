@@ -35,6 +35,9 @@ public class FPSController : MonoBehaviour
     [SerializeField] Image energyBarFill;
     [SerializeField] GameObject blinkingPanel;
     [SerializeField] Animator animBody;
+    [SerializeField] GameObject winPanel;
+    [SerializeField] GameObject losePanel;
+    [SerializeField] AudioSource loopedSpeaker;
     private void Awake()
     {
         playerRb = GetComponent<Rigidbody>();
@@ -59,10 +62,18 @@ public class FPSController : MonoBehaviour
         {
             //Método de perder
             //Animación de blinking y se escucha un golpe en el suelo (thump)
+            losePanel.SetActive(true);
+            Cursor.lockState = CursorLockMode.Confined;
+            Cursor.visible = true;
+            Time.timeScale = 0f;
             Debug.Log("Game over!!");
         }
         else if (gameManager.points > 10)
         {
+            winPanel.SetActive(true);
+            Cursor.lockState = CursorLockMode.Confined;
+            Cursor.visible = true;
+            Time.timeScale = 0f;
             Debug.Log("Win!!");
         }
         //Debug ray: visible only in Scene
@@ -71,6 +82,7 @@ public class FPSController : MonoBehaviour
         {
             blinkingPanel.SetActive(true);
             isBlinking = true;
+            loopedSpeaker.enabled = true;
             //StartCoroutine(Blinking(2));
         }
         else if(energy <=10 && !isBlinking)
@@ -80,8 +92,9 @@ public class FPSController : MonoBehaviour
         }
         else if (isBlinking && energy > 20)
         {
-            isBlinking = true;
+            isBlinking = false;
             blinkingPanel.SetActive(false);
+            loopedSpeaker.enabled = true;
         }
     }
 

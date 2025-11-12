@@ -15,6 +15,7 @@ public class SO_GameManager : ScriptableObject
     public int points; //quejas de ti al jefe, si hay 3 a la calle
     public int tasksPoints; //para ganar??
     public GameObject cinematic;
+    public AudioClip[] playerSounds;
     //public NPCAIBase npcAI;
     //public GameObject npcAtFrontDesk;
 

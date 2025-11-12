@@ -12,12 +12,18 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1bf5c9d0a77d56440a6e8175090908ac, type: 3}
   m_Name: GameManager
   m_EditorClassIdentifier: 
-  workingPeople: 5
-  seatFree: 000101010101
+  workingPeople: 4
+  seatFree: 000000010101
   someoneInSecretary: 1
   bossInQueue: 0
   visitorInQueue: 0
   strikes: 0
-  points: 6
+  points: 8
   tasksPoints: 0
   cinematic: {fileID: 0}
+  playerSounds:
+  - {fileID: 8300000, guid: ece84d9fa88a94d45a135d0a00b1c081, type: 3}
+  - {fileID: 8300000, guid: 7da5b06b12aac754bbaae8bec167529f, type: 3}
+  - {fileID: 8300000, guid: bbddd5974af5aef41a14ca0e2abfc320, type: 3}
+  - {fileID: 8300000, guid: af8d054f252cfd2469a250a0181a0dbb, type: 3}
+  - {fileID: 8300000, guid: f984538e391f7d646a35f761e8d79876, type: 3}

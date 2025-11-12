@@ -38,6 +38,7 @@ public class InteractingSystem : MonoBehaviour
     public NPCAIBase npcAtFrontDesk = null;
     public BossAI bossAtFrontDesk = null;
     public VisitorAI visitorAtFrontDesk = null;
+    [SerializeField] AudioSource playerSpeaker;
 
     #endregion
 
@@ -215,6 +216,7 @@ public class InteractingSystem : MonoBehaviour
                                     pages[0].GetComponent<Rigidbody>().useGravity = false;
                                     pages[0].GetComponent<Collider>().enabled = false;
                                     pages[0].transform.SetParent(pages[1].transform);
+                                    playerSpeaker.PlayOneShot(gameManager.playerSounds[0]);
                                 }
                                 else if (pages[2] != null)
                                 {
@@ -254,7 +256,8 @@ public class InteractingSystem : MonoBehaviour
                                 else if (bossAtFrontDesk != null) bossAtFrontDesk.Receive(null, 5);
                                 else if (visitorAtFrontDesk != null) visitorAtFrontDesk.Receive(null, 5);
                             }
-                                equipado = null;
+                            playerSpeaker.PlayOneShot(gameManager.playerSounds[1]);
+                            equipado = null;
                             //animación, subir numero de papeles dentro
                         }
                         else if(señalado.objectType == 7)
@@ -273,6 +276,7 @@ public class InteractingSystem : MonoBehaviour
                                 else if (bossAtFrontDesk != null) bossAtFrontDesk.Receive(null, 5);
                                 else if (visitorAtFrontDesk != null) visitorAtFrontDesk.Receive(null, 5);
                             }
+                            //playerSpeaker.PlayOneShot(gameManager.playerSounds[4]);//papelera
                             equipado = null;
                         }
                         else if(señalado.objectType == 8 && señalado.mainPart)
@@ -291,6 +295,7 @@ public class InteractingSystem : MonoBehaviour
                                 else if (bossAtFrontDesk != null) bossAtFrontDesk.Receive(null, 5);
                                 else if (visitorAtFrontDesk != null) visitorAtFrontDesk.Receive(null, 5);
                             }
+
                             equipado = null;
                         }
                         else if (señalado.objectType == 10 && señalado.mainPart)
@@ -301,7 +306,8 @@ public class InteractingSystem : MonoBehaviour
                             heldObject.transform.position = señalado.initialPoint.position;
                             heldObject.transform.rotation = señalado.initialPoint.rotation;
                             heldObject.transform.parent = señalado.gameObject.transform;
-                            equipado.GetComponent<Collider>().enabled = true;
+                            StartCoroutine(Scanning(equipado.GetComponent<Collider>()));
+                            playerSpeaker.PlayOneShot(gameManager.playerSounds[2]);
                             heldObject = null;
                             equipado = null;
 
@@ -414,7 +420,12 @@ public class InteractingSystem : MonoBehaviour
         }
         
     }
+    IEnumerator Scanning(Collider col)
+    {
+        yield return new WaitForSeconds(8);
 
+        col.enabled = true;
+    }
     IEnumerator ReloadRoutine()
     {
         Animator mugAnim = mug.gameObject.GetComponent<Animator>();

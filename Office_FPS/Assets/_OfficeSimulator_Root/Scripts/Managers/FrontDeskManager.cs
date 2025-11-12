@@ -37,6 +37,7 @@ public class FrontDeskManager : MonoBehaviour
 
     [SerializeField] GameObject pointsText;
     [SerializeField] GameObject strikesText;
+    [SerializeField] AudioSource notifySpeaker;
 
     private void Awake()
     {
@@ -189,7 +190,8 @@ public class FrontDeskManager : MonoBehaviour
     #endregion
     public void ShowNotification(bool isPositive)
     {
-        Debug.Log("se llega aqui");
+        notifySpeaker.enabled = false;
+        notifySpeaker.enabled = true;
         StartCoroutine(ActivateText(isPositive));
     }
     IEnumerator ActivateText(bool isPositive)
