@@ -5,41 +5,38 @@ using UnityEngine.AI;
 
 public class NPCAIBase : MonoBehaviour
 {
-    #region General Variables
+    #region Variables
     [Header("AI Configuration")]
     [SerializeField] NavMeshAgent agent; //Ref al componente "cerebro" del agente
     [SerializeField] NavMeshObstacle obstacle; //Ref al componente "cerebro" del agente
-    [SerializeField] int patience = 100;
-    [SerializeField] int maxPatience = 100;
-
-    [Header("NPC Needs")]
-    //estás 5 condiciones las podría poner en un array
-    //valores random al principio de la partida, así no van a la vez
-    //TESTEARLO
-    //no volver a contar el tiempo de esa actividad hasta que vuelvan de eso
-    //Ej.: se elige hunger (50), se pone automáticamente a 100, se realiza la acción y el tiempo de espera y antes de salir del método se settea a 0 de nuevo
-    [SerializeField] int hunger = 0; // = a bit slower than socialization, 7 min?
-    [SerializeField] int workDone = 0; //kind of slow, 4 min
-    [SerializeField] int needForBreak = 0; // faster, 5-6 min?
-    [SerializeField] int secretaryNeed = 0; // = need for break, 6 min
-    [SerializeField] int socializationNeed = 0; // = a bit slower than break, 3 min
-
+    [SerializeField] int patience = 60;
+    [SerializeField] int maxPatience = 60;
+    
     [Header("Patroling Stats")]
     [SerializeField] bool walkPointSet;
     [SerializeField] bool goalSet;
     [SerializeField] bool arrived;
-    [SerializeField] bool readyToGo;
-
-    [Header("Interacting Stats")]
-    [SerializeField] float timeLimit = 5f; //Tiempo entre ataque y ataque
-    [SerializeField] GameObject heldObject; //Ref al prefab del proyectil
-    [SerializeField] Transform holdPoint; //Ref a la posición desde la que se dispara
-    
 
     [Header("States & Detection")]
-    [SerializeField] int actualState= 0; //0 working, 1 eating, 2 going out, 3secretary ask
+    [SerializeField] bool willSatAtWorkdesk;
     [SerializeField] Transform[] destinations;
+    [SerializeField] Transform[] seatsCafeteria;
     [SerializeField] LayerMask npcLayer;
+    [SerializeField] GameObject[] objectsToUse;//sushi para comer, etc.
+    public bool favourDone;//cuando se realice la tarea de la secretaría
+    public bool hasAsked;//cuando se realice la tarea de la secretaría
+    bool canAskYou;//cuando llegue a secretaría
+    bool favourChosen = false;
+    int seatNumber;
+    float timePassed = -10;
+    [SerializeField] int activityToDo = -1;
+    [SerializeField] int lastActivity = -1;
+    [SerializeField] int favourAsked = -1; //0 Grapados, 1 papeles impresos, 2 Acreditaciones, 3 triturar/papelera, 4 clasificado,// 5 papelera
+    int timesWorked;
+    bool isBusy = false;
+
+    float stateUpdateTimer = 0f;
+    float stateUpdateInterval = 0.5f;
 
     [Header("Stuck Detection")]
     [SerializeField] float stuckCheckTime = 2f; //Tiempo que el agente espera para comprobar si está stuck
@@ -49,26 +46,15 @@ public class NPCAIBase : MonoBehaviour
     float stuckTimer; //Reloj que cuenta el tiempo de estar stuck
     float lastCheckTime; //Tiempo de chequeo previo de stuck
     Vector3 lastPosition; //Posición del último walkpoint perseguido
+
     Animator animator;
     Rigidbody rb;
+    [Header("Other References")]
+    [SerializeField]SO_GameManager gameManager;
+    [SerializeField] InteractingSystem interactingSystem;
+    [SerializeField] FrontDeskManager frontDesk;
+    public NPCAIBase npcScript;
     #endregion
-    [SerializeField]GameManager gameManager; //Referencia a Scriptable Object?
-    Vector3 destination;
-    [SerializeField]Transform[] seatsCafeteria;
-    bool interrupted;
-    bool satAtWorkdesk;
-    bool waiting;
-    bool firstTask = true;
-    public bool favourDone;//cuando se realice la tarea de la secretaría
-    bool canAskYou;//cuando llegue a secretaría
-    int seatNumber;
-    float timePassed = -10;
-    [SerializeField] int activityToDo = -1;
-    [SerializeField] int lastActivity = -1;
-
-    //poner que tengan variables de hunger y que se vaya restando, así irán con tiempos regulados, tmb ciertos descansos/coffee breaks y hablar con otros hasta que estén de frente a ellos (raycasts)
-
-
     private void Awake()
     {
         agent = GetComponent<NavMeshAgent>();
@@ -79,40 +65,57 @@ public class NPCAIBase : MonoBehaviour
         lastCheckTime = Time.time;
         gameManager.workingPeople = 0;
         gameManager.someoneInSecretary = false;
-        gameManager.seatsFree = 6; //o los que haya
-        gameManager.strikes = 0;
-        gameManager.seats.Clear();
-        gameManager.seats.Add(0);
-        gameManager.seats.Add(1);
-        gameManager.seats.Add(2);
-        gameManager.seats.Add(3);
-        gameManager.seats.Add(4);
-        gameManager.seats.Add(5);
+        npcScript = GetComponent<NPCAIBase>();
+        gameManager.seatFree[0] = true;
+        gameManager.seatFree[1] = true;
+        gameManager.seatFree[2] = true;
+        gameManager.seatFree[3] = true;
+        gameManager.seatFree[4] = true;
+        gameManager.seatFree[5] = true;
     }
     private void Start()
     {
-        hunger = Random.Range(0, 100);
-        workDone = Random.Range(0, 100);
-        needForBreak = Random.Range(0, 100);
-        secretaryNeed = Random.Range(0, 100);
-        socializationNeed = Random.Range(0, 100);
+        patience = maxPatience;
+        willSatAtWorkdesk = true;
+        goalSet = true;
+        Work();
     }
-    // Update is called once per frame
     void Update()
     {
+        if(favourDone) //comprobar si después de esto se envian más npcs ahí
+        {
+            favourDone = false;
+            hasAsked = false;
+            arrived = false;
+            patience = maxPatience;
+            lastActivity = 4;
+            //apagar todos los objetos que había mostrado
+            gameManager.someoneInSecretary = false;
+            Work();
+        }
         timePassed += Time.deltaTime;
         if(timePassed >= 10)
         {
             timePassed = 0;
-            Debug.Log("Stats added!");
-            hunger += 10;
-            socializationNeed += 10;
-            needForBreak += 10;
-            secretaryNeed += 20;
-            //si la paciencia esta a 0, cambias de meta y se marca un strike
+            if (hasAsked)
+            {
+                patience -= 10; //por ejemplo
+            }
+            if(patience <= 0)
+            {
+                gameManager.Score(false);
+                frontDesk.ShowNotification(false);
+                frontDesk.Dialogue(7);
+                StartCoroutine(TimeInLocationRoutine(2));
+            }
         }
         //aumentar variables de stats
-        NPCStateUpdater();
+        stateUpdateTimer += Time.deltaTime;
+        if (stateUpdateTimer >= stateUpdateInterval)
+        {
+            NPCStateUpdater();
+            stateUpdateTimer = 0f;
+        }
         //CheckIfStuck();
         if (!arrived) animator.SetBool("isWalking", true); //retocar esto para casos específicos
         else animator.SetBool("isWalking", false);
@@ -120,391 +123,400 @@ public class NPCAIBase : MonoBehaviour
 
     void NPCStateUpdater()
     {
-        if(firstTask) //así todos trabajan al inicio y no se ralla el contador
+        if (!arrived)
         {
-            firstTask = false;
-            waiting = true;
-            MomentaryWork();
-        }
-        if (workDone >= 100)
-        {
-            Debug.Log("Has trabajado mucho, toma un bonus");
-            hunger += 10;
-            needForBreak += 40;
-            socializationNeed += 30;
-            //secretaría??
-            //hay que poner que se resetee a 0 en algun momento
-        }
-        //juntar raycast con parar el agente, guardar y seguir la dirección inicial y cuando no tenga nada delante, resetearlo
-        if(!arrived)
-        {
-            RaycastHit hit;
-            float range = 2f;
-            
             if (!goalSet)
             {
-                if(obstacle.enabled) obstacle.enabled = false;//echarle un ojo
-                if(!agent.enabled) agent.enabled = true;
-                if (workDone >= 70)//si ya has trabajado mucho
-                {
-                    if (gameManager.workingPeople < 7) //si hay muy poca gente trabajando actualmente
-                    {
-                        MomentaryWork();
-                        waiting = true;
-                    }
-                    else
-                    {
-                        satAtWorkdesk = false;
-                        if (!gameManager.someoneInSecretary)
-                        {
-                            //Debug.Log("Se incluye visitar la secretaría");
-                            ChooseActivity(30, 20, 20, 10);
-                            //activityToDo = Random.Range(0, 5);
-                        }
-                        else
-                        {
-                            //Debug.Log("No se incluye visitar la secretaría");
-                            ChooseActivity(40, 20, 20, 21);//activityToDo = Random.Range(0, 4);
-                        }
-                    }
-                }
-                else
-                {
-                    if(gameManager.workingPeople < 5) //si hay muy poca gente trabajando de verdad
-                    {
-                        MomentaryWork();
-                        waiting = true;
-                    }
-                    else //puedes hacer otras actividades desde tu sitio sentado
-                    {
-                        if (secretaryNeed >= 70 && !gameManager.someoneInSecretary)
-                        {
-                            VisitSecretary();
-                        }
-                        else if(hunger >= 80)
-                        {
-                            Eat();
-                        }
-                        else if (needForBreak >= 80)
-                        {
-                            TakeBreak();
-                        }
-                        else if (socializationNeed >= 80)
-                        {
-                            Socialize();
-                        }
-                        else
-                        {
-                            if (!gameManager.someoneInSecretary) ChooseActivity(60, 10, 10, 10);
-                            else ChooseActivity(70, 10, 10, 11);
-                        }
-                        
-                        //if no hay nadie en secretaria, se incluye VisitSecretary()
-                        //Elegir entre Eat(), VisitSecretary(), TakeBreak(), Socialize()
-                    }
-                    if(secretaryNeed < 70) satAtWorkdesk = true;
-                    else satAtWorkdesk = false;
-                }
+                if (gameManager.workingPeople < 5) Work();
+                else ChooseActivity();
+                
             }
-            else if(goalSet && walkPointSet)
-            {/*NPC stopper
-                Debug.DrawRay(holdPoint.transform.position, transform.forward * 2f, Color.yellow);
-                if (Physics.Raycast(holdPoint.transform.position, transform.forward, out hit, range, npcLayer))
+            else if (goalSet && walkPointSet)
+            {
+                if(activityToDo == 4)
                 {
-                    Debug.Log(hit.collider.name);
-                    interrupted = true;
-                    StartCoroutine(TimeInLocationRoutine());
-                }*/
-                //destination = new Vector3(destinations[randomDestination].position.x, transform.position.y, destinations[randomDestination].position.z);
-                //Debug.Log("Soy " + name + "X" + Mathf.Abs(transform.position.x - destinations[activityToDo].position.x) + " Z" + Mathf.Abs(transform.position.z - destinations[activityToDo].position.z));
-                if (!satAtWorkdesk && activityToDo ==1)
-                {
-                    if (Mathf.Abs(transform.position.x - seatsCafeteria[seatNumber].position.x) < 0.5f) //Mathf.Abs para que siempre sea positivo
+                    if (Mathf.Abs(transform.position.x - destinations[4].position.x) < 0.5f) //Mathf.Abs para que siempre sea positivo
                     {
-                        if ((Mathf.Abs(transform.position.z - seatsCafeteria[seatNumber].position.z) < 0.5f)) StartCoroutine(TimeInLocationRoutine());
+                        if ((Mathf.Abs(transform.position.z - destinations[4].position.z) < 0.5f)) StartCoroutine(TimeInLocationRoutine(0));
                     }
-                    
                 }
-                else
+                else if(willSatAtWorkdesk)
                 {
-                    if (Mathf.Abs(transform.position.x - destinations[activityToDo].position.x) < 0.5f) //Mathf.Abs para que siempre sea positivo
+                    if (Mathf.Abs(transform.position.x - destinations[0].position.x) < 0.5f)
                     {
-                        if ((Mathf.Abs(transform.position.z - destinations[activityToDo].position.z) < 0.5f)) StartCoroutine(TimeInLocationRoutine());
+                        if ((Mathf.Abs(transform.position.z - destinations[0].position.z) < 0.5f)) StartCoroutine(TimeInLocationRoutine(0));
+                    }
+                }
+                else if(activityToDo == 1 && !willSatAtWorkdesk)
+                {
+                    if (Mathf.Abs(transform.position.x - seatsCafeteria[seatNumber].position.x) < 0.5f)
+                    {
+                        if ((Mathf.Abs(transform.position.z - seatsCafeteria[seatNumber].position.z) < 0.5f)) StartCoroutine(TimeInLocationRoutine(0));
                     }
                 }
             }
         }
+        //juntar raycast con parar el agente, guardar y seguir la dirección inicial y cuando no tenga nada delante, resetearlo
     }
-    void ChooseActivity(int partWork, int partEat, int partSocial, int partBreak)
+    void ChooseActivity()
     {
+        bool seatsFree = false;
         int randomActivity = Random.Range(0, 101);
-
-        //goalSet = true;
-        if (randomActivity < partWork) MomentaryWork();//40
-        else if (randomActivity < partWork + partEat) Eat();//15
-        else if (randomActivity < partWork + partEat + partSocial) Socialize();//15
-        else if (randomActivity < partWork + partEat + partSocial + partBreak) TakeBreak();//10
-        else VisitSecretary();//20
-
+        for (int i = 0; i < 6; i++)
+        {
+            if (gameManager.seatFree[i])
+            {
+                seatsFree = true;
+                break;
+            }
+        }
+        goalSet = true;
+        
+        if(!gameManager.someoneInSecretary && (!gameManager.bossInQueue && !gameManager.visitorInQueue)) VisitSecretary();
+        else
+        {
+            if (timesWorked >= 3)
+            {
+                if(seatsFree)
+                {
+                    timesWorked = 0;
+                    willSatAtWorkdesk = false;
+                    Eat();
+                }
+            }
+            else
+            {
+                willSatAtWorkdesk = true;
+                if (randomActivity < 60) Work();//40
+                else if (randomActivity < 75) Eat();//15
+                else if (randomActivity < 90) Socialize();//15
+                else Sleep();
+            }
+        }
     }
     #region Different States
-    void MomentaryWork()//aparecen de repente en otros sitios
+    void Work()//aparecen de repente en otros sitios
     {
-        
         activityToDo = 0;
-        if (lastActivity == 0)
-        {
-            walkPointSet = false;
-            satAtWorkdesk = true;
-            //Debug.Log("Soy " + name + "Mi última actividad era trabajar, así que ya estoy en el sitio");
-        }
+        willSatAtWorkdesk = true;
+        timesWorked++;
+        if (lastActivity == 0) walkPointSet = false;
         else
         {
             gameManager.workingPeople++;
-            satAtWorkdesk = false;
             walkPointSet = true;
-            agent.SetDestination(destinations[activityToDo].position);
-            //Volver a tu mesa
-            //Debug.Log("Soy " + name + "Mi última actividad no era trabajar pero ahora sí, así que vuelvo al sitio");
-        }
-        if (waiting)
-        {
-            //Debug.Log("Soy " + name + "Estoy trabajando, pero esperando! Porque mi nivel de trabajo" + workDone);
-            //Hacer IEnumerator?
-            //walkPointSet = true, pero que se quede en el sitio
-            //Trabaja durante 20 segundos y vuelve a checkear si puede irse
-            StartCoroutine(ActivityDuration(10, 20));
-            //walkPointSet = false
-        }
-        else
-        {
-            //Debug.Log("Soy " + name + "Estoy trabajando! Porque mi nivel de trabajo es:" + workDone);
-            //Ponerse a trabajar
-            //30-45 segundos trabajando
-            StartCoroutine(ActivityDuration(30, 45));
+
+            ResetActivityStatus();
+            ReturnToSeat();
         }
         goalSet = true;
+        StartCoroutine(ActivityDuration(2, 11));
     }
     void Eat()
     {
         activityToDo = 1;
-
-        if(lastActivity == 0) gameManager.workingPeople --;
-        if(gameManager.seatsFree < 1)
+        //willSatAtWorkdesk = true;
+        
+        if(willSatAtWorkdesk)
         {
-            satAtWorkdesk = true;
-        }
-        else
-        {
-            satAtWorkdesk = false;
-            gameManager.seatsFree -= 1;
-        }
-        if(satAtWorkdesk) //o todas las sillas de la cafetería están llenas
-        {
-            //Debug.Log("Soy " + name + "Estoy comiendo en mi mesa! Porque mis niveles de trabajo y de comer son:" + workDone + ", " + hunger);
-            if(lastActivity != 0) agent.SetDestination(destinations[0].position); //para que se siente en su mesa
-            //si tienes hambre sacas la comida a tu mesa
-        }
-        else
-        {
-            //Debug.Log("Soy " + name + "Estoy comiendo en un lugar! Porque mis niveles de trabajo y de comida son:" + workDone + ", " + hunger);
-            walkPointSet = true;
-            if (lastActivity != activityToDo)
+            if (lastActivity != 0)
             {
-                int randomNumber;
-                randomNumber = Random.Range(0, gameManager.seats.Count);
-                seatNumber = gameManager.seats[randomNumber];
-                agent.SetDestination(seatsCafeteria[seatNumber].position); //para que vaya a cafetería (distintos puntos para cada asiento)
-                gameManager.seats.Remove(seatNumber);//alguno no llega del todo!!
+                gameManager.workingPeople++;
+                walkPointSet = true;
+                goalSet = true;
+
+                ResetActivityStatus();
+                ReturnToSeat();
             }
-            //te manda a una silla de la cafetería
-            //25-40 segundos? ->
         }
-        StartCoroutine(ActivityDuration(25, 40)); //pero que esto empiece después de llegar al sitio?
-        goalSet = true;
+        else
+        {
+            if(lastActivity != 1)
+            {
+                gameManager.workingPeople--;
+                animator.SetBool("isSitting", false);
+                goalSet = true;
+                walkPointSet = true;
+                //agent.SetDestination(destinations[activityToDo].position);
+                for (int i = 0; i < 6; i++)
+                {
+                    if (gameManager.seatFree[i] == true)
+                    {
+                        seatNumber = i;
+                        gameManager.seatFree[i] = false;
+                        break;
+                    }
+                }
+
+                ResetActivityStatus();
+                agent.SetDestination(seatsCafeteria[seatNumber].position);
+            }
+        }
+        //Animación de comer
+        StartCoroutine(ActivityDuration(7, 15));
     }
     void Socialize()
     {
-        
         activityToDo = 2;
-        if (lastActivity == 0) gameManager.workingPeople--;
-        //if (satAtWorkdesk)
-        //{
-            if (lastActivity != 0) agent.SetDestination(destinations[0].position); //para que se siente en su mesa
-            //si quieres socializar, llamas por telefono a otro que esté en su mesa
-            //Animación de llamar por teléfono a alguien random de la oficina (al que llames, se considerará que si está trabajando?)
-        //}
-        /*else QUITADO POR AHORA POR FALTA DE TIEMPO
-        {
-            //Debug.Log("Soy " + name + "Estoy socializando en un lugar! Porque mis niveles de trabajo y de socializar son:" + workDone + ", " + socializationNeed);
-            walkPointSet = true;
-            if (lastActivity != activityToDo) agent.SetDestination(destinations[activityToDo].position); //punto random de emsa de otro
-            //15-35 segundos?
-        }*/
-        StartCoroutine(ActivityDuration(15, 35));
-        goalSet = true;
-    }
-    void TakeBreak()
-    {
-        goalSet = true;
-        activityToDo = 3;
-        if (lastActivity == 0) gameManager.workingPeople--;
+        willSatAtWorkdesk = true;
+        //if (lastActivity == 0) gameManager.workingPeople--;
 
-        if (satAtWorkdesk)
+        if (lastActivity != 0)
         {
-            //Debug.Log("Soy " + name +" Descansando en mi mesa! Niveles de trabajo y de descansar son:" + workDone + ", " + needForBreak);
-            //si necesitas un descanso, te duermes en la mesa
-            if (lastActivity != 0) agent.SetDestination(destinations[0].position); //para que se siente en su mesa
-        }
-        else
-        {
-            //Debug.Log("Soy " + name + "Descansando en un lugar! Niveles de trabajo y de descansar son:" + workDone + ", " + needForBreak);
             walkPointSet = true;
-            if (lastActivity != activityToDo) agent.SetDestination(destinations[activityToDo].position);//te manda a un punto fuera del edificio (o se van en ascensor que tiene un collider para ti)
-            //40-90 segundos?
+            ResetActivityStatus();
+            ReturnToSeat();
         }
-        StartCoroutine(ActivityDuration(40, 90)); //aqui no se ejecuta??
+        //Animación de llamar por teléfono
+        StartCoroutine(ActivityDuration(2, 5));
+    }
+    void Sleep()
+    {
+        activityToDo = 3;
+        willSatAtWorkdesk = true;
+        //if (lastActivity == 0) gameManager.workingPeople--;
+
+        if (lastActivity != 0)
+        {
+            walkPointSet = true;
+            ResetActivityStatus();
+            ReturnToSeat();
+        }
+        //Animación de dormir
+        StartCoroutine(ActivityDuration(2, 5));
     }
     void VisitSecretary()
     {
-        goalSet = true;
+        //no se pq inGame se pone a activityToDo = 1 cuando está delante de secretario
+        
         activityToDo = 4;
+        willSatAtWorkdesk = false;
+        animator.SetBool("isSitting", false);
+        goalSet = true;
+        walkPointSet = true;
+        ResetActivityStatus();
         if (lastActivity == 0) gameManager.workingPeople--;
         gameManager.someoneInSecretary = true;
-        //Debug.Log("Soy " + name + "Estoy en secretaría! Porque mis niveles de trabajo y de secretaría son:" + workDone + ", " + secretaryNeed);
-        walkPointSet = true;
         agent.SetDestination(destinations[activityToDo].position);
+        interactingSystem.npcAtFrontDesk = this.gameObject.GetComponent<NPCAIBase>();
         //se elige actividad entre grapar, triturar, fotocopiar, imprimir, clasificar documentos, NO NPC, PERO SI OTROS: JEFE -> vaciar la papelera, VISITANTES -> acreditaciones  etc.?
-        //se activa la paciencia
-        //en el update, si la condicion de favourDone == true apagará el objeto, animación feliz y se irá a trabajar
-
-        //te manda a la ventana de secretaría y pides algo a través de otro script que gestiona el diálogo y los objetos de oficina que spawnees
-        // los objetos se quedarán en secretaría, se encienden y apagan ahí (un npc te pide algo, se encienden objetos separados o de cierta manera predeterminada, se lo das
-        // si es lo que quería, se vuelve a apagar, se resetea sus posiciones y el npc se va como si nada)
+        //se activa la paciencia y en el update, si la condicion de favourDone == true apagará el objeto, animación feliz y se irá a trabajar
     }
+    //te manda a la ventana de secretaría y pides algo a través de otro script que gestiona el diálogo y los objetos de oficina que spawnees
+    // los objetos se quedarán en secretaría, se encienden y apagan ahí (un npc te pide algo, se encienden objetos separados o de cierta manera predeterminada, se lo das
+    // si es lo que quería, se vuelve a apagar, se resetea sus posiciones y el npc se va como si nada)
+    #endregion
     public void AskForFavour()//Esto se llama al interactuar con el NPC
     {
-        bool favourChosen = false;
-        if (!favourChosen)
+        if (activityToDo == 4)
         {
-            favourChosen = true;
-            //Elegir petición actividad entre grapar, triturar, fotocopiar, imprimir, clasificar documentos
-
-        }
-        else
-        {
-            if (canAskYou)
+            Debug.Log("Se pregunta un favor");
+            
+            if (!favourChosen)
             {
-                //Enseñar diálogo con petición
+                favourChosen = true;
+                bool alPrincipio = Random.Range(0, 2) == 0;
+                if(alPrincipio)favourAsked = Random.Range(0, 2);
+                else favourAsked = Random.Range(3, 5);
+                Debug.Log("se elige la tarea" + favourAsked);
+                hasAsked = true;//esto por ahora aqui
+                                //Elegir petición actividad entre grapar, triturar, fotocopiar, imprimir, clasificar documentos
 
+                frontDesk.objectsSet = false;
+                frontDesk.StartActivity(favourAsked);
+            }
+            else
+            {
+                if (canAskYou)
+                {
+                    if (!hasAsked) hasAsked = true;
+                    frontDesk.StartActivity(favourAsked);
+                    if(favourAsked == -1)
+                    {
+                        favourChosen = false;
+                    }
+                    //Enseñar diálogo con petición
+                }
             }
         }
     }
-    #endregion
-
-    IEnumerator ActivityDuration(int min, int max)
+    public void Receive(TipoObjeto handedObject, int taskDone)
     {
-        if((walkPointSet && arrived)||!walkPointSet)
+        if(hasAsked && favourAsked!= -1)
         {
-            animator.SetBool("isWalking", false);
-            agent.enabled = false;
-            obstacle.enabled = true;
-            //poner aquí animaciones de cada lugar??
-            if (activityToDo == 0)
+            if(handedObject != null)
             {
-                animator.SetBool("isSitting", true);
-                transform.position = destinations[activityToDo].position;
-                transform.rotation = destinations[activityToDo].rotation; // no va bien
-                //agent.SetDestination(transform.position);
-                rb.isKinematic = true;
-            }
-            else if (activityToDo == 1 && !satAtWorkdesk)
-            {
-                animator.SetBool("isSitting", true);
-                transform.position = seatsCafeteria[seatNumber].position;
-                transform.rotation = seatsCafeteria[seatNumber].rotation;
-                rb.isKinematic = true;
-            }
-
-            float timeToSpend = Random.Range(min, max +1);//yield return new WaitForSeconds(Random.Range(min, max + 1));
-            //Debug.Log(name + ", estaré este tiempo en la actividad:" + timeToSpend);
-            yield return new WaitForSeconds(timeToSpend);
-
-            if (activityToDo == 0)
-            {
-                workDone += 20;
-                if (workDone >= 100) workDone = 100;
-                animator.SetBool("isSitting", false);
-            }
-            else if (activityToDo == 1)
-            {
-                hunger -= 80;
-                if (hunger < 0) hunger = 0;
-                if(!satAtWorkdesk)
+                if (favourAsked != 1 && favourAsked != 0 && favourAsked == handedObject.activityDone)
                 {
-                    gameManager.seatsFree += 1;
-                    gameManager.seats.Add(seatNumber);
-                    animator.SetBool("isSitting", false);
+                    gameManager.Score(true);
+                    frontDesk.ShowNotification(true);
+                    frontDesk.Dialogue(5);
+                }
+                else if (favourAsked == 1 && favourAsked == handedObject.activityDone && handedObject.activityDone == 1)
+                {
+                    gameManager.Score(true);
+                    frontDesk.ShowNotification(true);
+                    frontDesk.Dialogue(5);
+                }
+                else if (favourAsked == 0 && favourAsked == handedObject.activityDone && handedObject.activityDone == 0)
+                {
+                    gameManager.Score(true);
+                    frontDesk.ShowNotification(true);
+                    frontDesk.Dialogue(5);
+                }
+                else
+                {
+                    gameManager.Score(false);
+                    frontDesk.ShowNotification(false);
+                    frontDesk.Dialogue(8);
+                    //quitar de que sea el hijo del player y poner strike? o quitar que sean hijos y volver a poner el transform.position como al spawnear
+                }
+                StartCoroutine(TimeInLocationRoutine(1));
+                handedObject.gameObject.SetActive(false);
+                handedObject.gameObject.transform.parent = null;
+                if (handedObject.activityDone == 0)
+                {
+                    handedObject.gameObject.transform.GetChild(0).gameObject.SetActive(false);
+                    handedObject.gameObject.transform.GetChild(0).parent = null; //si son folios grapados se separan
+                }
+                
+            }
+            else
+            {
+                if(taskDone != -1)
+                {
+                    if (taskDone == favourAsked)
+                    {
+                        gameManager.Score(true);
+                        frontDesk.ShowNotification(true);
+                        frontDesk.Dialogue(5);
+                    }
+                    else
+                    {
+                        gameManager.Score(false);
+                        frontDesk.ShowNotification(false);
+                        frontDesk.Dialogue(8);
+                    }
+                    StartCoroutine(TimeInLocationRoutine(1));
                 }
             }
-            else if (activityToDo == 2)
+        }
+    }
+    void ReturnToSeat()
+    {
+        agent.SetDestination(destinations[0].position); //para que se siente en su mesa
+        animator.SetBool("isSitting", false);
+    }
+    IEnumerator ActivityDuration(int min, int max)
+    {
+        
+        if (isBusy) yield break;
+        isBusy = true;
+        int lunchToday = 0;
+        if (activityToDo > -1)
+        {
+            if (walkPointSet)
             {
-                socializationNeed -= 40;
-                if (socializationNeed < 0) socializationNeed = 0;
+                while (!arrived)
+                    yield return null;
             }
-            else if (activityToDo == 3)
+            if ((walkPointSet && arrived) || !walkPointSet)
             {
-                needForBreak -= 50;
-                if (needForBreak < 0) needForBreak = 0;
+                animator.SetBool("isWalking", false);
+                if (willSatAtWorkdesk || (!willSatAtWorkdesk && activityToDo == 1)) animator.SetBool("isSitting", true);
+                agent.enabled = false;
+                obstacle.enabled = true;
+                //poner aquí animaciones de cada lugar??
+                if (activityToDo == 0)
+                {
+                    transform.position = destinations[activityToDo].position;
+                    transform.rotation = destinations[activityToDo].rotation; // no va bien
+                }
+                else if (activityToDo == 1 && !willSatAtWorkdesk)
+                {
+                    transform.position = seatsCafeteria[seatNumber].position;
+                    transform.rotation = seatsCafeteria[seatNumber].rotation;
+                    lunchToday = Random.Range(0, 2);
+                    objectsToUse[lunchToday].SetActive(true); //que estén siempre enfrente
+                }
+                else if (activityToDo == 4)
+                {
+                    transform.position = destinations[activityToDo].position;
+                    transform.rotation = destinations[activityToDo].rotation; //no del todo
+                }
+                else if (willSatAtWorkdesk)
+                {
+                    transform.position = destinations[0].position;
+                    transform.rotation = destinations[0].rotation; //no del todo
+                }
+                //animator.SetBool("isSitting", true);
+                rb.isKinematic = true;
+
+                float timeToSpend = Random.Range(min, max + 1);
+                yield return new WaitForSeconds(timeToSpend);
+                if (activityToDo == 4)
+                {
+                    gameManager.someoneInSecretary = false;
+                }
+                else if (activityToDo == 1 && !willSatAtWorkdesk)
+                {
+                    gameManager.seatFree[seatNumber] = true;
+                    objectsToUse[lunchToday].SetActive(false); //que estén siempre enfrente
+                }
+                if (willSatAtWorkdesk) lastActivity = 0;
+                else lastActivity = activityToDo;
+                activityToDo = -1; //para que no se marque como que ha llegado de nuevo
+                goalSet = false;
+                walkPointSet = false;
+                arrived = false;
+
+                isBusy = false;
+                yield break;
             }
-            else if (activityToDo == 4)
-            {
-                gameManager.someoneInSecretary = false;
-                secretaryNeed -= 20;
-                if (secretaryNeed < 0) secretaryNeed = 0;
-            }
-            walkPointSet = false;
+        }
+        
+    }
+    void ResetActivityStatus()
+    {
+        if((lastActivity != 0 && willSatAtWorkdesk) || (lastActivity == 0 && !willSatAtWorkdesk) || lastActivity == 1)
+        {
             obstacle.enabled = false;
-            yield return null;
             agent.enabled = true;
-            if (satAtWorkdesk)lastActivity = 0;
-            else lastActivity = activityToDo;
-            if(waiting) waiting = false;
-            goalSet = false;
-            rb.isKinematic = false;
-            arrived = false;
-            interrupted = false;
-            yield break;
+            //rb.isKinematic = false;
+        }
+    }
+
+    IEnumerator TimeInLocationRoutine(int caseNumber)
+    {
+        if(caseNumber == 0)
+        {
+            arrived = true;
+            gameObject.transform.localRotation = destinations[activityToDo].rotation;
+            if (activityToDo == 4)
+            {
+                canAskYou = true;
+            }
+        }
+        else if (caseNumber == 1)
+        {
+            yield return new WaitForSeconds(2);
+            favourDone = true;
+            favourChosen = false;
+            favourAsked = -1;
+            hasAsked = false;
+            lastActivity = activityToDo;
+            interactingSystem.heldObject = null;
+            interactingSystem.bossAtFrontDesk = null;
+            frontDesk.ResetObjects();
         }
         else
         {
             yield return new WaitForSeconds(2);
-            StartCoroutine(ActivityDuration(min, max)); //Va a crear problemas??
-            //Debug.Log("Retry!");
-            //yield break;
+            frontDesk.ResetObjects();
+            //animacion sad
+            favourDone = true;
         }
-    }
-    
-
-    #region Movement Handler
-    IEnumerator TimeInLocationRoutine()
-    {
-        arrived = true;
-        if(activityToDo == 4)
-        {
-            canAskYou = true;
-        }
-        /*if(lastActivity == 2 && !interrupted) //si es un lugar de sentarse
-        {}else if de que si es interrupted que alguno de los dos rote o deje pasar al otro
-        else*/
-        {//Pasar datos al otro IEnumerator!!!!
-            agent.SetDestination(transform.position);
-            rb.isKinematic = true;
-            //int cooldown = (int)Random.Range(1, timeLimit);
-            //yield return new WaitForSeconds(cooldown);
-            yield return null;
-        }
-        
+        yield break;
     }
 
     void CheckIfStuck()
@@ -534,14 +546,7 @@ public class NPCAIBase : MonoBehaviour
             lastCheckTime = Time.time;
         }
     }
-    #endregion
+    
 
-    private void OnDrawGizmosSelected()
-    {
-        if (Application.isPlaying) return; //Determinar que esto solo se ejecute en el editor de Unity
-
-        Gizmos.color = Color.red; 
-        Gizmos.DrawSphere(destination, 1);
-    }
 }
 
