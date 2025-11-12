@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 [CreateAssetMenu(fileName = "SO_GameManager", menuName = "Scriptable Objects/SO_GameManager")]
 public class SO_GameManager : ScriptableObject
@@ -35,6 +36,17 @@ public class SO_GameManager : ScriptableObject
         Time.timeScale = 0f;
         Cursor.lockState = CursorLockMode.Confined;
         Cursor.visible = true;
+    }
+    public void ExitGame()
+    {
+        Application.Quit();
+    }
+    public void ReplayGame()
+    {
+        Time.timeScale = 0f;
+        Cursor.lockState = CursorLockMode.Confined;
+        Cursor.visible = true;
+        SceneManager.LoadScene(0);
     }
     public void Score(bool isPositive)
     {

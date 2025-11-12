@@ -464,8 +464,12 @@ public class BossAI : MonoBehaviour
                 favourAsked = -1;
                 hasAsked = false;
                 lastActivity = activityToDo;
-                frontDesk.ResetObjects();
-                frontDesk.Dialogue(10);
+                if(arrived)
+                {
+
+                    frontDesk.ResetObjects();
+                    frontDesk.Dialogue(10);
+                }
                 //Debug.Log("Perdon, llego tarde a un meeting");
             }
             agent.SetDestination(destinations[0].position);
