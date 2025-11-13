@@ -124,6 +124,10 @@ public class InteractingSystem : MonoBehaviour
                                 heldObject.transform.localRotation = Quaternion.Euler(0, 48, 0);
                             }
                         }
+                        else if (hit.collider.GetComponent<TipoObjeto>().canBeUsedAlone) //solo para pulsar botones?? retocaresto
+                        {
+                            hit.collider.GetComponent<TipoObjeto>().UseObject();
+                        }
                     }
                 }
             }
