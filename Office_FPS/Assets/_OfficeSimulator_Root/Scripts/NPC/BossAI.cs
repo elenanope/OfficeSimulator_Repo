@@ -100,9 +100,18 @@ public class BossAI : MonoBehaviour
             }
             if (patience <= 0)
             {
+                favourDone = false;
+                favourChosen = false;
+                hasAsked = false;
+                arrived = false;
+                patience = maxPatience;
+                lastActivity = 4;
+                //apagar todos los objetos que había mostrado
+                gameManager.someoneInSecretary = false;
+                Work();
                 gameManager.Score(false);
                 frontDesk.ShowNotification(false);
-                frontDesk.Dialogue(7);
+                frontDesk.Dialogue(7, 0);
                 StartCoroutine(TimeInLocationRoutine(2));
             }
         }
@@ -258,14 +267,14 @@ public class BossAI : MonoBehaviour
                 hasAsked = true;//esto por ahora aqui
                 //Elegir petición actividad entre grapar, triturar, fotocopiar, imprimir, clasificar documentos
                 frontDesk.objectsSet = false;
-                frontDesk.StartActivity(favourAsked);
+                frontDesk.StartActivity(favourAsked, 0);
             }
             else
             {
                 if (canAskYou)
                 {
                     if (!hasAsked) hasAsked = true;
-                    frontDesk.StartActivity(favourAsked);
+                    frontDesk.StartActivity(favourAsked, 0);
                     //Enseñar diálogo con petición
                 }
             }
@@ -281,25 +290,25 @@ public class BossAI : MonoBehaviour
                 {
                     gameManager.Score(true);
                     frontDesk.ShowNotification(true);
-                    frontDesk.Dialogue(5);
+                    frontDesk.Dialogue(5, 0);
                 }
                 else if (favourAsked == 1 && favourAsked == handedObject.activityDone && handedObject.activityDone == 1)
                 {
                     gameManager.Score(true);
                     frontDesk.ShowNotification(true);
-                    frontDesk.Dialogue(5);
+                    frontDesk.Dialogue(5, 0);
                 }
                 else if (favourAsked == 0 && favourAsked == handedObject.activityDone && handedObject.activityDone == 0)
                 {
                     gameManager.Score(true);
                     frontDesk.ShowNotification(true);
-                    frontDesk.Dialogue(5);
+                    frontDesk.Dialogue(5, 0);
                 }
                 else
                 {
                     gameManager.Score(false);
                     frontDesk.ShowNotification(false);
-                    frontDesk.Dialogue(9);
+                    frontDesk.Dialogue(9, 0);
                     //quitar de que sea el hijo del player y poner strike? o quitar que sean hijos y volver a poner el transform.position como al spawnear
                 }
                 StartCoroutine(TimeInLocationRoutine(1));
@@ -325,13 +334,13 @@ public class BossAI : MonoBehaviour
                     {
                         gameManager.Score(true);
                         frontDesk.ShowNotification(true);
-                        frontDesk.Dialogue(5);
+                        frontDesk.Dialogue(5, 0);
                     }
                     else
                     {
                         gameManager.Score(false);
                         frontDesk.ShowNotification(false);
-                        frontDesk.Dialogue(9);
+                        frontDesk.Dialogue(9, 0);
                     }
                     StartCoroutine(TimeInLocationRoutine(1));
                 }
@@ -468,7 +477,7 @@ public class BossAI : MonoBehaviour
                 {
 
                     frontDesk.ResetObjects();
-                    frontDesk.Dialogue(10);
+                    frontDesk.Dialogue(10, 0);
                 }
                 //Debug.Log("Perdon, llego tarde a un meeting");
             }

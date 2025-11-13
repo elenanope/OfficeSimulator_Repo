@@ -40,7 +40,7 @@ public class CoffeeMaker : MonoBehaviour
         //animación + sonido
         Animator mugAnim = mug.gameObject.GetComponent<Animator>();
         mugAnim.SetBool("isFull", true);
-        yield return new WaitForSeconds(2);
+        yield return new WaitForSeconds(11);
         //apagar sonido, activar collider taza
         mug.isFull = true;
         mugCol.enabled = true;

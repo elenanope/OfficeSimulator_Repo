@@ -31,6 +31,7 @@ public class FrontDeskManager : MonoBehaviour
     bool didDialogueStart;
     [SerializeField]bool dialogueOver;
     int lineIndex;
+    int voiceType;
 
     [SerializeField, TextArea(2, 4)] string[] dialogueLines;// 0 grapar, 1 fotocopiar, 2 acreditaciones, 3 deshacerte, 4 clasificar documentos, 5 Bienn gracias, 6 noo, pero va que tengo prisa
                                                             // 7 paciencia acabada: lo siento pero no has hecho muy buen trabajo, 8 yo no queria eso, adios, 9 mal, inadmisible (a la primera)
@@ -38,9 +39,13 @@ public class FrontDeskManager : MonoBehaviour
     [SerializeField] GameObject pointsText;
     [SerializeField] GameObject strikesText;
     [SerializeField] AudioSource notifySpeaker;
+    [SerializeField] AudioSource npcSpeaker;
+    [SerializeField] SO_GameManager gameManager;
+    //Collider frontDeskCol;
 
     private void Awake()
     {
+        //frontDeskCol = GetComponent<Collider>();
         paper1.transform.position = spawnPoint1.position;
         paper2.transform.position = spawnPoint2.position;
         paper1.SetActive(false);
@@ -55,10 +60,10 @@ public class FrontDeskManager : MonoBehaviour
         infoPaper2.paperType = eleccion1;
         //meshRenderer2.material = sheetsMats[materialChosen];
     }
-    public void StartActivity(int favourAsked)
+    public void StartActivity(int favourAsked, int personNumber)//0 boss, 1 hombre, 2 mujer
     {
         activityChosen = favourAsked;
-        Dialogue(favourAsked); 
+        Dialogue(favourAsked, personNumber); 
         if (!objectsSet)
         {
             PrepareObjects(activityChosen);
@@ -138,9 +143,8 @@ public class FrontDeskManager : MonoBehaviour
     #region Dialogue Management
     void StartDialogue()
     {
-            didDialogueStart = true;
-            dialoguePanel.SetActive(true);
-            StartCoroutine(ShowLine());
+        didDialogueStart = true;
+        StartCoroutine(ShowLine());
     }
 
     void NextDialogueLine()
@@ -153,6 +157,8 @@ public class FrontDeskManager : MonoBehaviour
     private IEnumerator ShowLine()
     {
         dialogueText.text = string.Empty;
+        yield return new WaitForSecondsRealtime(0.5f);
+        dialoguePanel.SetActive(true);
 
         foreach (char ch in dialogueLines[lineIndex])
         {
@@ -164,9 +170,13 @@ public class FrontDeskManager : MonoBehaviour
         NextDialogueLine();
     }
 
-    public void Dialogue(int lineToRead)
+    public void Dialogue(int lineToRead, int personNumber)//0 boss, 1 hombre, 2 mujer
     {
         lineIndex = lineToRead;
+        voiceType = personNumber;
+        if (voiceType == 0) npcSpeaker.PlayOneShot(gameManager.playerSounds[5]);
+        else if (voiceType == 1) npcSpeaker.PlayOneShot(gameManager.playerSounds[Random.Range(6, 10)]);
+        else if (voiceType == 2) npcSpeaker.PlayOneShot(gameManager.playerSounds[Random.Range(10, 14)]);
         if (lineIndex < 5 || lineIndex == 6)
         {
             if (!didDialogueStart)
@@ -196,10 +206,11 @@ public class FrontDeskManager : MonoBehaviour
     }
     IEnumerator ActivateText(bool isPositive)
     {
-        if(isPositive) pointsText.SetActive(true);
+        if (isPositive) pointsText.SetActive(true);
         else strikesText.SetActive(true);
         yield return new WaitForSeconds(2);
         if (isPositive) pointsText.SetActive(false);
         else strikesText.SetActive(false);
     }
+    
 }

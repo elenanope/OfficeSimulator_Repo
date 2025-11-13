@@ -11,6 +11,7 @@ public class NPCAIBase : MonoBehaviour
     [SerializeField] NavMeshObstacle obstacle; //Ref al componente "cerebro" del agente
     [SerializeField] int patience = 60;
     [SerializeField] int maxPatience = 60;
+    [SerializeField] bool isFemale;
     
     [Header("Patroling Stats")]
     [SerializeField] bool walkPointSet;
@@ -103,9 +104,19 @@ public class NPCAIBase : MonoBehaviour
             }
             if(patience <= 0)
             {
+                favourDone = false;
+                favourChosen = false;
+                hasAsked = false;
+                arrived = false;
+                patience = maxPatience;
+                lastActivity = 4;
+                //apagar todos los objetos que había mostrado
+                gameManager.someoneInSecretary = false;
+                Work();
                 gameManager.Score(false);
                 frontDesk.ShowNotification(false);
-                frontDesk.Dialogue(7);
+                if(isFemale)frontDesk.Dialogue(7, 2);
+                else frontDesk.Dialogue(7, 1);
                 StartCoroutine(TimeInLocationRoutine(2));
             }
         }
@@ -323,15 +334,17 @@ public class NPCAIBase : MonoBehaviour
                                 //Elegir petición actividad entre grapar, triturar, fotocopiar, imprimir, clasificar documentos
 
                 frontDesk.objectsSet = false;
-                frontDesk.StartActivity(favourAsked);
+                if (isFemale) frontDesk.StartActivity(favourAsked, 2);
+                else frontDesk.StartActivity(favourAsked, 1);
             }
             else
             {
                 if (canAskYou)
                 {
                     if (!hasAsked) hasAsked = true;
-                    frontDesk.StartActivity(favourAsked);
-                    if(favourAsked == -1)
+                    if (isFemale) frontDesk.StartActivity(favourAsked, 2);
+                    else frontDesk.StartActivity(favourAsked, 1);
+                    if (favourAsked == -1)
                     {
                         favourChosen = false;
                     }
@@ -350,25 +363,29 @@ public class NPCAIBase : MonoBehaviour
                 {
                     gameManager.Score(true);
                     frontDesk.ShowNotification(true);
-                    frontDesk.Dialogue(5);
+                    if (isFemale) frontDesk.Dialogue(5, 2);
+                    else frontDesk.Dialogue(5, 1);
                 }
                 else if (favourAsked == 1 && favourAsked == handedObject.activityDone && handedObject.activityDone == 1)
                 {
                     gameManager.Score(true);
                     frontDesk.ShowNotification(true);
-                    frontDesk.Dialogue(5);
+                    if (isFemale) frontDesk.Dialogue(5, 2);
+                    else frontDesk.Dialogue(5, 1);
                 }
                 else if (favourAsked == 0 && favourAsked == handedObject.activityDone && handedObject.activityDone == 0)
                 {
                     gameManager.Score(true);
                     frontDesk.ShowNotification(true);
-                    frontDesk.Dialogue(5);
+                    if (isFemale) frontDesk.Dialogue(5, 2);
+                    else frontDesk.Dialogue(5, 1);
                 }
                 else
                 {
                     gameManager.Score(false);
                     frontDesk.ShowNotification(false);
-                    frontDesk.Dialogue(8);
+                    if (isFemale) frontDesk.Dialogue(8, 2);
+                    else frontDesk.Dialogue(8, 1);
                     //quitar de que sea el hijo del player y poner strike? o quitar que sean hijos y volver a poner el transform.position como al spawnear
                 }
                 StartCoroutine(TimeInLocationRoutine(1));
@@ -389,13 +406,15 @@ public class NPCAIBase : MonoBehaviour
                     {
                         gameManager.Score(true);
                         frontDesk.ShowNotification(true);
-                        frontDesk.Dialogue(5);
+                        if (isFemale) frontDesk.Dialogue(5, 2);
+                        else frontDesk.Dialogue(5, 1);
                     }
                     else
                     {
                         gameManager.Score(false);
                         frontDesk.ShowNotification(false);
-                        frontDesk.Dialogue(8);
+                        if (isFemale) frontDesk.Dialogue(8, 2);
+                        else frontDesk.Dialogue(8, 1);
                     }
                     StartCoroutine(TimeInLocationRoutine(1));
                 }

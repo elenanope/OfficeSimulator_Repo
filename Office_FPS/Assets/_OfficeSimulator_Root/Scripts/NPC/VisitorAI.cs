@@ -166,13 +166,13 @@ public class VisitorAI : MonoBehaviour
             {
                 cardState = 1;
                 frontDeskManager.objectsSet = false;
-                frontDeskManager.StartActivity(2);
+                frontDeskManager.StartActivity(2, 2);
                 Debug.Log("te dice tarea");
             }
             else if(cardState == 1)
             {
                 Debug.Log("te repite la tarea");
-                frontDeskManager.StartActivity(2);
+                frontDeskManager.StartActivity(2, 2);
                 //frontDeskManager.Dialogue(2);
             }
             else if(cardState == 2 && meetingState == 3)
@@ -213,19 +213,16 @@ public class VisitorAI : MonoBehaviour
                     gameManager.points++;
                     gameManager.Score(true);
                     frontDeskManager.ShowNotification(true);
-                    frontDeskManager.Dialogue(5);
-                    Debug.Log("Te han dado lo correcto");
+                    frontDeskManager.Dialogue(5, 2);
                 }
                 else
                 {
-                    frontDeskManager.Dialogue(6);
-                    Debug.Log("Yo no he pedido esto");
+                    frontDeskManager.Dialogue(6, 2);
                 }
             }
             else
             {
-                frontDeskManager.Dialogue(6);
-                Debug.Log("Eh, que solo quiero una acreditacion");
+                frontDeskManager.Dialogue(6, 2);
             }
         }
     }

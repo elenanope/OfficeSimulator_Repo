@@ -39,6 +39,7 @@ public class InteractingSystem : MonoBehaviour
     public BossAI bossAtFrontDesk = null;
     public VisitorAI visitorAtFrontDesk = null;
     [SerializeField] AudioSource playerSpeaker;
+    [SerializeField] bool isInside = true;
 
     #endregion
 
@@ -123,39 +124,25 @@ public class InteractingSystem : MonoBehaviour
                                 heldObject.transform.localRotation = Quaternion.Euler(0, 48, 0);
                             }
                         }
-                        else if (hit.collider.TryGetComponent(out TipoObjeto señalado))
-                        {
-                            if (señalado.objectOnTop != null)
-                            {
-                                heldObject = señalado.objectOnTop;
-                                heldObject.transform.SetParent(fpsCam.transform);
-                                heldObject.GetComponent<Collider>().enabled = false;
-                                if (heldObject.TryGetComponent(out Rigidbody rb))
-                                {
-                                    rb.isKinematic = true;
-                                    rb.useGravity = false;
-                                }
-                                heldObject.transform.position = holdingPoint.position;
-                                señalado.objectOnTop = null;
-                            }
-                            else if (señalado.canBeUsedAlone) señalado.UseObject();
-                        }
                     }
                 }
             }
             if(Physics.Raycast(fpsCam.transform.position, direction, out hit, range, NPCLayer))
             {
-                if (hit.collider.TryGetComponent(out NPCAIBase npc))
+                if(isInside)
                 {
-                    npc.AskForFavour();
-                }
-                else if (hit.collider.TryGetComponent(out BossAI boss))
-                {
-                    boss.AskForFavour();
-                }
-                else if (hit.collider.TryGetComponent(out VisitorAI visitor))
-                {
-                    visitor.AskForCard();
+                    if (hit.collider.TryGetComponent(out NPCAIBase npc))
+                    {
+                        npc.AskForFavour();
+                    }
+                    else if (hit.collider.TryGetComponent(out BossAI boss))
+                    {
+                        boss.AskForFavour();
+                    }
+                    else if (hit.collider.TryGetComponent(out VisitorAI visitor))
+                    {
+                        visitor.AskForCard();
+                    }
                 }
             }
         }
@@ -329,17 +316,20 @@ public class InteractingSystem : MonoBehaviour
             }
             else if(Physics.Raycast(fpsCam.transform.position, direction, out hit, range, NPCLayer)) //testing
             {
-                if(hit.transform.TryGetComponent(out NPCAIBase scriptNPC))
+                if(isInside)
                 {
-                    scriptNPC.Receive(heldObject.GetComponent<TipoObjeto>(), -1);
-                }
-                else if(hit.transform.TryGetComponent(out VisitorAI visitorAI))
-                {
-                    visitorAI.Receive(heldObject.GetComponent<TipoObjeto>(), -1);
-                }
-                else if(hit.transform.TryGetComponent(out BossAI bossAI))
-                {
-                    bossAI.Receive(heldObject.GetComponent<TipoObjeto>(), -1);
+                    if (hit.transform.TryGetComponent(out NPCAIBase scriptNPC))
+                    {
+                        scriptNPC.Receive(heldObject.GetComponent<TipoObjeto>(), -1);
+                    }
+                    else if (hit.transform.TryGetComponent(out VisitorAI visitorAI))
+                    {
+                        visitorAI.Receive(heldObject.GetComponent<TipoObjeto>(), -1);
+                    }
+                    else if (hit.transform.TryGetComponent(out BossAI bossAI))
+                    {
+                        bossAI.Receive(heldObject.GetComponent<TipoObjeto>(), -1);
+                    }
                 }
             }
             else if (Physics.Raycast(fpsCam.transform.position, direction, out hit, range) && heldObject.TryGetComponent(out TipoObjeto sostenido))
@@ -440,6 +430,20 @@ public class InteractingSystem : MonoBehaviour
         if (scriptController.energy > 100) scriptController.energy = 100;
         reloadingCoffee = false;
         yield return null;
+    }
+    private void OnTriggerEnter(Collider other)
+    {
+        if (other.gameObject.name == "ManagerFrontDesk")
+        {
+            isInside = true;
+        }
+    }
+    private void OnTriggerExit(Collider other)
+    {
+        if (other.gameObject.name == "ManagerFrontDesk")
+        {
+            isInside = false;
+        }
     }
 
     #region Input Methods
