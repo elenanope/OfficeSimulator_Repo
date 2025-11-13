@@ -174,15 +174,15 @@ public class FrontDeskManager : MonoBehaviour
     {
         lineIndex = lineToRead;
         voiceType = personNumber;
-        if (voiceType == 0) npcSpeaker.PlayOneShot(gameManager.playerSounds[5]);
-        else if (voiceType == 1) npcSpeaker.PlayOneShot(gameManager.playerSounds[Random.Range(6, 10)]);
-        else if (voiceType == 2) npcSpeaker.PlayOneShot(gameManager.playerSounds[Random.Range(10, 14)]);
         if (lineIndex < 5 || lineIndex == 6)
         {
             if (!didDialogueStart)
             {
                 StopCoroutine(ShowLine());
                 StartDialogue();
+                if (voiceType == 0) npcSpeaker.PlayOneShot(gameManager.playerSounds[5]);
+                else if (voiceType == 1) npcSpeaker.PlayOneShot(gameManager.playerSounds[Random.Range(6, 10)]);
+                else if (voiceType == 2) npcSpeaker.PlayOneShot(gameManager.playerSounds[Random.Range(10, 14)]);
             }
         }
         else
@@ -190,6 +190,9 @@ public class FrontDeskManager : MonoBehaviour
             if (!didDialogueStart)
             {
                 StopCoroutine(ShowLine());
+                if (voiceType == 0) npcSpeaker.PlayOneShot(gameManager.playerSounds[5]);
+                else if (voiceType == 1) npcSpeaker.PlayOneShot(gameManager.playerSounds[Random.Range(6, 10)]);
+                else if (voiceType == 2) npcSpeaker.PlayOneShot(gameManager.playerSounds[Random.Range(10, 14)]);
             }
 
             StartDialogue();
