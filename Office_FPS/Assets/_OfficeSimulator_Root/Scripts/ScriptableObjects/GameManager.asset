@@ -1,0 +1,38 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1bf5c9d0a77d56440a6e8175090908ac, type: 3}
+  m_Name: GameManager
+  m_EditorClassIdentifier: 
+  workingPeople: 4
+  seatFree: 000000010101
+  someoneInSecretary: 1
+  bossInQueue: 0
+  visitorInQueue: 0
+  strikes: 0
+  points: 8
+  tasksPoints: 0
+  cinematic: {fileID: 0}
+  playerSounds:
+  - {fileID: 8300000, guid: ece84d9fa88a94d45a135d0a00b1c081, type: 3}
+  - {fileID: 8300000, guid: 7da5b06b12aac754bbaae8bec167529f, type: 3}
+  - {fileID: 8300000, guid: bbddd5974af5aef41a14ca0e2abfc320, type: 3}
+  - {fileID: 8300000, guid: af8d054f252cfd2469a250a0181a0dbb, type: 3}
+  - {fileID: 8300000, guid: f984538e391f7d646a35f761e8d79876, type: 3}
+  - {fileID: 8300000, guid: 626996f32b94b544aa265c753498cb25, type: 3}
+  - {fileID: 8300000, guid: c507a9f4ad7db0b459c6f9746ffce963, type: 3}
+  - {fileID: 8300000, guid: cc9ac5bdf5c7c294e9b31443068bbada, type: 3}
+  - {fileID: 8300000, guid: c37005297db820c4ab81965a9c75237c, type: 3}
+  - {fileID: 8300000, guid: 90bf5cd5a6f664a4fa2ce6efe595ad44, type: 3}
+  - {fileID: 8300000, guid: 81ada7b715d25034aaf748b0d6dc508d, type: 3}
+  - {fileID: 8300000, guid: 69b6bec6acc49ea489a9eac2d0317be3, type: 3}
+  - {fileID: 8300000, guid: 9839320b453643b46b961e8920eb82ab, type: 3}
+  - {fileID: 8300000, guid: b8ca6e365cda672469e5ca50ed7f86b8, type: 3}
